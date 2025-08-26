@@ -5,6 +5,7 @@ ThisBuild / assemblyMergeStrategy := {
   case "application.conf"                            => MergeStrategy.concat
   case "unwanted.txt"                                => MergeStrategy.discard
   case "module-info.class"                           => MergeStrategy.discard
+  case PathList("META-INF", "services", xs @ _*) => MergeStrategy.concat
   case PathList("META-INF", "versions", "9", "module-info.class") => MergeStrategy.discard
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case x =>
@@ -28,5 +29,6 @@ lazy val root =
         libraryDependencies += "org.slf4j" % "slf4j-simple" % slf4jVersion,
         libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.5.18",
         libraryDependencies += "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.2.5",
-        assembly / mainClass := Some("it.unibo.demo.HeadlessFormation"),
+        assembly / mainClass := Some("it.unibo.demo.CircleFormationDemo"),
+        mainClass := Some("it.unibo.demo.CircleFormationDemo")
     )
