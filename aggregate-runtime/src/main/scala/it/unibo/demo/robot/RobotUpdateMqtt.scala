@@ -3,6 +3,7 @@ package it.unibo.demo.robot
 import it.unibo.core.{Environment, EnvironmentUpdate}
 import it.unibo.demo.robot.Actuation.{Forward, NoOp, Rotation}
 import it.unibo.demo.{ID, Info, Position}
+import it.unibo.mqtt.MqttContext
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -11,7 +12,7 @@ enum Actuation:
   case Forward(vector: (Double, Double))
   case NoOp
 
-class RobotUpdateMqtt(threshold: Double)(using ExecutionContext)
+class RobotUpdateMqtt(threshold: Double)(using ExecutionContext, MqttContext)
     extends EnvironmentUpdate[ID, Position, Actuation, Info, Environment[ID, Position, Info]]:
 
   override def update(world: Environment[ID, Position, Info], id: ID, actuation: Actuation): Future[Unit] =

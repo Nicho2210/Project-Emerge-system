@@ -4,6 +4,7 @@ import it.unibo.core.{Environment, EnvironmentProvider}
 import it.unibo.demo.environment.MqttEnvironment
 import it.unibo.demo.provider.MqttProtocol.{Neighborhood, RobotPosition}
 import it.unibo.demo.{ID, Info, Position}
+import it.unibo.mqtt.MqttContext
 import org.eclipse.paho.client.mqttv3.*
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import upickle.default.{macroRW, ReadWriter as RW, *}
@@ -21,7 +22,7 @@ object MqttProtocol:
     val topic: String = "robots/+/neighbors"
   given RW[RobotPosition] = macroRW
 
-class MqttProvider(private val url: String)(using ExecutionContext) extends EnvironmentProvider[ID, Position, Info, Environment[ID, Position, Info]]:
+class MqttProvider(using ExecutionContext, MqttContext) extends EnvironmentProvider[ID, Position, Info, Environment[ID, Position, Info]]:
   private val worldMap: ConcurrentMap[ID, (Position, Info)] = ConcurrentHashMap()
   private val neighborhood: ConcurrentMap[ID, Set[ID]] = ConcurrentHashMap()
   override def provide(): Future[Environment[ID, (Info, Info), Info]] = Future:
@@ -31,7 +32,7 @@ class MqttProvider(private val url: String)(using ExecutionContext) extends Envi
     currentWorld
 
   def start(): Unit =
-    val client = MqttClient(url, MqttClient.generateClientId())
+    val client = summon[MqttContext].client
     client.connect()
     client.subscribeWithResponse(RobotPosition.topic, (topic: String, message: MqttMessage) => {
       val robot = read[MqttProtocol.RobotPosition](message.getPayload)
