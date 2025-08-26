@@ -91,8 +91,8 @@ def main(debug=False, mqtt_url="localhost", width=640, height=480):
                 f"{mqtt_topic}{pose_info.marker_id}/position",
                 json.dumps(
                     {
-                        "x": float(pos["x"]),
-                        "y": float(pos["y"]),
+                        "x": float(pos["x"]) * -1,
+                        "y": float(pos["y"]) * -1,
                         "orientation": float(rot["yaw"]) * math.pi / 180.0,
                         "robot_id": int(pose_info.marker_id),
                     }
