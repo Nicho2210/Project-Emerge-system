@@ -10,7 +10,7 @@ function CameraController({ trigger }: { trigger: number }) {
   const { camera } = useThree();
 
   useEffect(() => {
-      camera.position.set(0, 30, 0); // Reset to default position
+      camera.position.set(300, 300, 300); // Reset to default position
       camera.lookAt(0,0,0);
   }, [trigger, camera]);
 
@@ -24,9 +24,9 @@ function RobotScene({ robots, trigger, onRobotClick }: { robots: RobotData[]; tr
         onPointerMissed={() => onRobotClick(null)}
         shadows // Enable shadow rendering
       > 
-        <axesHelper args={[100]} />
+        <axesHelper args={[1000]} />
         <CameraController trigger={trigger} /> 
-        <OrbitControls enablePan={false} minPolarAngle={0} maxPolarAngle={Math.PI / 2.5} />
+        <OrbitControls enablePan={true} minPolarAngle={0} maxPolarAngle={Math.PI / 2.5} />
         
         {/* Lighting setup for shadows */}
         <ambientLight intensity={0.4} />
