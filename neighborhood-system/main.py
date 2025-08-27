@@ -1,0 +1,90 @@
+import threading
+import json
+import os
+from flask import Flask, request, jsonify
+import paho.mqtt.client as mqtt
+
+app = Flask(__name__)
+
+
+# Global state
+neighborhood_type = 'RADIUS'  # Default type
+radius_value = 2.0            # Default radius
+robot_positions = {}
+
+# Read MQTT broker URL and port from environment variables
+MQTT_BROKER = os.environ.get('MQTT_BROKER', 'localhost')
+MQTT_PORT = int(os.environ.get('MQTT_PORT', '1883'))
+POSITION_TOPIC = 'robots/+/position'
+NEIGHBORS_TOPIC = 'robots/{}/neighbors'
+
+# --- MQTT Logic ---
+def on_connect(client, userdata, flags, rc):
+    print('Connected to MQTT broker')
+    client.subscribe(POSITION_TOPIC)
+
+def on_message(client, userdata, msg):
+    topic = msg.topic
+    payload = msg.payload.decode()
+    # Extract robot id from topic
+    try:
+        robot_id = topic.split('/')[1]
+        position = json.loads(payload)
+        robot_positions[robot_id] = position
+        compute_and_publish_neighbors(client)
+    except Exception as e:
+        print(f'Error processing message: {e}')
+
+def compute_and_publish_neighbors(client):
+    global neighborhood_type, radius_value
+    for id1, pos1 in robot_positions.items():
+        neighbors = []
+        if neighborhood_type == 'FULL':
+            # All other robots are neighbors
+            neighbors = [id2 for id2 in robot_positions if id2 != id1]
+        elif neighborhood_type == 'RADIUS':
+            # Only robots within radius_value are neighbors
+            for id2, pos2 in robot_positions.items():
+                if id1 == id2:
+                    continue
+                dist = ((pos1['x']-pos2['x'])**2 + (pos1['y']-pos2['y'])**2)**0.5
+                if dist <= radius_value:
+                    neighbors.append(id2)
+        topic = NEIGHBORS_TOPIC.format(id1)
+        client.publish(topic, json.dumps(neighbors))
+
+mqtt_client = mqtt.Client()
+mqtt_client.on_connect = on_connect
+mqtt_client.on_message = on_message
+
+def mqtt_thread():
+    mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
+    mqtt_client.loop_forever()
+
+# --- Flask HTTP Endpoint ---
+
+# Set neighborhood type and radius via HTTP
+@app.route('/neighborhood', methods=['POST'])
+def set_neighborhood():
+    global neighborhood_type, radius_value
+    data = request.get_json()
+    if not data or 'type' not in data:
+        return jsonify({'error': 'Missing type'}), 400
+    neighborhood_type = data['type']
+    if 'radius' in data:
+        try:
+            radius_value = float(data['radius'])
+        except Exception:
+            return jsonify({'error': 'Invalid radius value'}), 400
+    return jsonify({'status': 'ok', 'type': neighborhood_type, 'radius': radius_value})
+
+
+# Default page: show current neighborhood type and radius
+@app.route('/', methods=['GET'])
+def index():
+    global neighborhood_type, radius_value
+    return f"<h2>Neighborhood System</h2><p>Type: <b>{neighborhood_type}</b></p><p>Radius: <b>{radius_value}</b></p>", 200
+
+if __name__ == '__main__':
+    threading.Thread(target=mqtt_thread, daemon=True).start()
+    app.run(host='0.0.0.0', port=5000)
