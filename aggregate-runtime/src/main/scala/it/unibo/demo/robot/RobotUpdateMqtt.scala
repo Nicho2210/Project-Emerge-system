@@ -50,21 +50,16 @@ class RobotUpdateMqtt(threshold: Double)(using ExecutionContext, MqttContext)
           val direction = world.sensing(id)
           val headingVector = (-Math.sin(direction), Math.cos(direction))
           val currentAngle = math.atan2(headingVector._2, headingVector._1)
-
           // Desired translation vector (could imply moving backward if opposite to heading)
           val desiredVector = (desired._1, desired._2)
-
           // Decide whether to move forward or backward based on dot product
           val dot = headingVector._1 * desiredVector._1 + headingVector._2 * desiredVector._2
           val moveForward = dot >= 0
-
-            // Angle of desired motion
+          // Angle of desired motion
           val desiredAngleRaw = math.atan2(desiredVector._2, desiredVector._1)
           // If we plan to move backward, add pi to desired angle (i.e., face opposite direction)
           val effectiveDesiredAngle = if moveForward then desiredAngleRaw else normalizeAngle(desiredAngleRaw + math.Pi)
-
           val deltaAngle = normalizeAngle(effectiveDesiredAngle - currentAngle)
-
           // If almost aligned, move; else rotate with direction given by sign of delta
           if math.abs(deltaAngle) < angleTolerance then
             if moveForward then RobotMqttProtocol.forward(id) else RobotMqttProtocol.backward(id)
