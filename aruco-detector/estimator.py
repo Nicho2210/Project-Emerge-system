@@ -45,6 +45,7 @@ class ArUcoRobotPoseEstimator:
 
         # For smoothing pose estimates - separate history for each robot
         self.pose_histories = {}  # Dictionary with marker_id as key
+        self.yaw_histories = {}
         self.max_history = smooting_history
 
     def detect_markers(self, frame):
@@ -129,29 +130,33 @@ class ArUcoRobotPoseEstimator:
 
         return math.degrees(x), math.degrees(y), math.degrees(z)
 
-    def smooth_pose(self, marker_id, rotation_vector, transition_vector):
+    def smooth_pose(self, marker_id, translation_vector):
         """
         Apply smoothing to pose estimates to reduce noise.
 
         Args:
             marker_id: ID of the marker
-            pose: Current pose (rotation_vector, transition_vector)
+            pose: Current pose (translation_vector)
 
         Returns:
             Smoothed pose
         """
-        if( marker_id not in self.pose_histories):
+        if(marker_id not in self.pose_histories):
             self.pose_histories[marker_id] = []
-        history = self.pose_histories[marker_id]
-        history.append((rotation_vector, transition_vector))
-        poses_history = history[-self.max_history:]
-        rotation_history = np.array([pose[0] for pose in poses_history])
-        transition_history = np.array([pose[1] for pose in poses_history])
-        rotations_history_abs = np.abs(rotation_history)
-        rotation_vector = np.mean(rotations_history_abs, axis=0)
-        transition_vector = np.mean(transition_history, axis=0)
-        return rotation_vector, transition_vector
+        translation_history = self.pose_histories[marker_id]
+        translation_history.append(translation_vector)
+        translation_vector = np.mean(translation_history, axis=0)
+        self.pose_histories[marker_id] = self.pose_histories[marker_id][-self.max_history:]
+        return translation_vector
 
+    def smooth_yaw(self, marker_id, yaw):
+        if(marker_id not in self.yaw_histories):
+            self.yaw_histories[marker_id] = []
+        history = self.yaw_histories[marker_id]
+        history.append(yaw)
+        result = np.mean(np.array(history))
+        self.yaw_histories[marker_id] = self.yaw_histories[marker_id][-self.max_history:]
+        return result
     def draw_pose_info(self, frame, corners, ids, poses):
         """
         Draw pose information on the frame.
@@ -205,18 +210,17 @@ class ArUcoRobotPoseEstimator:
             for i, (rotation_vector, transition_vector) in enumerate(poses):
                 # Apply smoothing for this specific marker
                 marker_id = ids[i][0]
-                smooth_rotation_vector, smooth_transition_vector = self.smooth_pose(marker_id, rotation_vector, transition_vector)
-                
+                smooth_transition_vector = self.smooth_pose(marker_id, transition_vector)
 
                 # Convert to readable format
                 x, y, z = smooth_transition_vector[0][0], smooth_transition_vector[1][0], smooth_transition_vector[2][0]
-                roll, pitch, yaw = self.rotation_vector_to_euler(smooth_rotation_vector)
+                roll, pitch, yaw = self.rotation_vector_to_euler(rotation_vector)
                 robot_info = RobotInformation(
                     marker_id=marker_id,
                     position={"x": x, "y": y, "z": z},
-                    rotation={"roll": roll, "pitch": pitch, "yaw": yaw},
+                    rotation={"roll": roll, "pitch": pitch, "yaw": self.smooth_yaw(marker_id, yaw)},
                     distance=np.linalg.norm(smooth_transition_vector),
-                    rotation_vector=smooth_rotation_vector,
+                    rotation_vector=rotation_vector,
                     transition_vector=smooth_transition_vector,
                 )
                 robots.append(robot_info)

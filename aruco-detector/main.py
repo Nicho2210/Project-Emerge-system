@@ -86,7 +86,6 @@ def main(debug=False, mqtt_url="localhost", width=640, height=480):
                 f"Pos({pos['x']:.3f}, {pos['y']:.3f}, {pos['z']:.3f}) "
                 f"Rot({rot['roll']:.1f}, {rot['pitch']:.1f}, {rot['yaw']:.1f})"
             )
-
             client.publish(
                 f"{mqtt_topic}{pose_info.marker_id}/position",
                 json.dumps(
