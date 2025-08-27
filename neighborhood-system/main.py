@@ -8,8 +8,8 @@ app = Flask(__name__)
 
 
 # Global state
-neighborhood_type = 'RADIUS'  # Default type
-radius_value = 2.0            # Default radius
+neighborhood_type = 'FULL'  # Default type "FULL" or "RADIUS"
+radius_value = 1.0            # Default radius
 robot_positions = {}
 
 # Read MQTT broker URL and port from environment variables
