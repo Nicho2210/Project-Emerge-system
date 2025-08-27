@@ -62,9 +62,7 @@ function RobotShape({ data, onClick }: { data: RobotData; onClick?: (id : number
   useFrame(() => {
     if (meshRef.current) {
       meshRef.current.position.set(position.x, 0, position.y);
-      // const correctedOrientation = fixOrientation(orientation);
-      // Apply orientation (already in radians from -pi to pi) with a -180 degree offset to align with X-axis
-      meshRef.current.rotation.set(0, -orientation , 0);
+      meshRef.current.rotation.set(0, orientation , 0);
       meshRef.current.userData = { id }; // Set userData with robot ID
     }
     if (textRef.current) {
@@ -85,10 +83,12 @@ function RobotShape({ data, onClick }: { data: RobotData; onClick?: (id : number
       >
         {/* cube as a mesh */}
         <mesh 
-          geometry={new THREE.BoxGeometry(1, 1, 1)} 
+          geometry={new THREE.ConeGeometry(0.5, 3, 32)} 
           material={new THREE.MeshStandardMaterial({ color: isLeader ? 'gold' : 'skyblue' })} 
-          position={[0, 0.5, 0]} // Position the cube above the ground
+          position={[0, 0.5, 0]} // Position the cone above the ground
+          rotation={[-Math.PI / 2, 0, 0]} // Tip points along Z axis
           scale={[11, 7, 17]} // Scale
+          
         />
         {/* <primitive 
           object={robotModel} 

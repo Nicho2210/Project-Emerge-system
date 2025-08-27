@@ -8,9 +8,23 @@ function NeighborLines({ robots }: { robots: RobotData[] }) {
 
   useFrame(() => {
     if (!groupRef.current) {return;}
-    while (groupRef.current.children.length > 0) {
-      groupRef.current.remove(groupRef.current.children[0]);
-    }
+      // Dispose geometries and materials before removing lines
+      while (groupRef.current.children.length > 0) {
+        const child = groupRef.current.children[0];
+        if (child instanceof THREE.Line) {
+          if (child.geometry) {
+            child.geometry.dispose();
+          }
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach(mat => mat.dispose && mat.dispose());
+            } else if (child.material.dispose) {
+              child.material.dispose();
+            }
+          }
+        }
+        groupRef.current.remove(child);
+      }
 
     robots.forEach((robot) => {
       const from = new THREE.Vector3(robot.position.x, 0, robot.position.y);

@@ -11,8 +11,8 @@ export class FakeEventStream {
 
   private generateFakeRobots(count: number): RobotData[] {
     const positions = Array.from({ length: count }, () => ({
-      x: Math.random() * 20 - 10, // X position in range -10 to 10
-      y: Math.random() * 20 - 10, // Z position in range -10 to 10
+      x: Math.random() * 300,
+      y: Math.random() * 300
     }));
     return positions.map((pos, i) => ({
       id: i, // Add unique identifier
@@ -25,8 +25,8 @@ export class FakeEventStream {
 
   private updateRobotPositions(robots: RobotData[]): RobotData[] {
     const newPositions = robots.map((robot) => ({
-      x: robot.position.x + (Math.random() - 0.5),
-      y: robot.position.y + (Math.random() - 0.5),
+      x: robot.position.x + (Math.random() - 0.5) * 10,
+      y: robot.position.y + (Math.random() - 0.5) * 10,
     }));
     return robots.map((robot, i) => ({
       ...robot,
@@ -57,7 +57,7 @@ export class FakeEventStream {
     this.intervalId = setInterval(() => {
       this.robots = this.updateRobotPositions(this.robots);
       callback([...this.robots]);
-    }, 200);
+    }, 30);
   }
 
   publishCommand(command: Vector2D): void {
