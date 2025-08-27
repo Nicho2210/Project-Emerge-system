@@ -4,29 +4,6 @@ import * as THREE from 'three';
 import { Text, useGLTF } from '@react-three/drei';
 import type { RobotData } from '../types/RobotData';
 
-// const normalizeAngle = (angle: number): number => {
-//   return ((angle + Math.PI) % (2 * Math.PI)) - Math.PI;
-// };
-
-// Helper: check and fix diagonal orientation
-// const fixOrientation = (angle: number): number => {
-//   const normalized = normalizeAngle(angle);
-//   const tol = 0.01;
-
-//   // Check for diagonals: 45°, 135°, -45°, -135°
-//   const diagonals = [Math.PI / 4, 3 * Math.PI / 4, -Math.PI / 4, -3 * Math.PI / 4];
-
-//   const isDiagonal = diagonals.some(
-//     (diag) => Math.abs(normalized - diag) < tol
-//   );
-
-//   if (isDiagonal) {
-//     // Rotate by -90 degrees (–π/2)
-//     return normalized - Math.PI / 2;
-//   }
-
-//   return normalized;
-// };
 
 function RobotShape({ data, onClick }: { data: RobotData; onClick?: (id : number) => void }) {
   const { position, orientation, isLeader, id } = data;
@@ -62,9 +39,10 @@ function RobotShape({ data, onClick }: { data: RobotData; onClick?: (id : number
   useFrame(() => {
     if (meshRef.current) {
       meshRef.current.position.set(position.x, 0, position.y);
-      meshRef.current.rotation.set(0, orientation , 0);
+      meshRef.current.rotation.set(0, -orientation , 0);
       meshRef.current.userData = { id }; // Set userData with robot ID
     }
+
     if (textRef.current) {
       textRef.current.lookAt(camera.position); // Make the text face the camera
     }
@@ -86,7 +64,7 @@ function RobotShape({ data, onClick }: { data: RobotData; onClick?: (id : number
           geometry={new THREE.ConeGeometry(0.5, 3, 32)} 
           material={new THREE.MeshStandardMaterial({ color: isLeader ? 'gold' : 'skyblue' })} 
           position={[0, 0.5, 0]} // Position the cone above the ground
-          rotation={[-Math.PI / 2, 0, 0]} // Tip points along Z axis
+          rotation={[Math.PI / 2, 0, 0]} // Tip points along Z axis
           scale={[11, 7, 17]} // Scale
           
         />
