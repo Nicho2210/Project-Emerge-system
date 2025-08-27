@@ -15,54 +15,58 @@ enum Actuation:
 class RobotUpdateMqtt(threshold: Double)(using ExecutionContext, MqttContext)
     extends EnvironmentUpdate[ID, Position, Actuation, Info, Environment[ID, Position, Info]]:
 
+  // Small angular tolerance to avoid oscillations when almost aligned (in radians)
+  private val angleTolerance = 5.0 * math.Pi / 180.0 // 5 degrees
+
+  private def normalizeAngle(a: Double): Double =
+    var x = a
+    while x <= -math.Pi do x += 2 * math.Pi
+    while x > math.Pi do x -= 2 * math.Pi
+    x
+
   override def update(world: Environment[ID, Position, Info], id: ID, actuation: Actuation): Future[Unit] =
     actuation match
       case _ if !world.nodes.contains(id) => Future(RobotMqttProtocol.nop(id))
       case NoOp => Future(RobotMqttProtocol.nop(id))
       case Rotation(actuation) =>
         Future:
-          val direction = world.sensing(id)
-          println((id, direction))
-          val directionVector = (-Math.sin(direction), Math.cos(direction))
-          val rotationVector = (actuation._1, actuation._2)
+          val direction = world.sensing(id) // current heading angle (robot frame)
+          val currentVector = (-Math.sin(direction), Math.cos(direction))
+          val targetVector = (actuation._1, actuation._2)
           val rotationEuclideanDistance = Math.sqrt(
-            Math.pow(rotationVector._1 - directionVector._1, 2) +
-              Math.pow(rotationVector._2 - directionVector._2, 2)
+            Math.pow(targetVector._1 - currentVector._1, 2) +
+              Math.pow(targetVector._2 - currentVector._2, 2)
           )
+          val currentAngle = math.atan2(currentVector._2, currentVector._1)
+          val targetAngle = math.atan2(targetVector._2, targetVector._1)
+          val deltaAngle = normalizeAngle(targetAngle - currentAngle)
+          if rotationEuclideanDistance < threshold || math.abs(deltaAngle) < angleTolerance then
+            RobotMqttProtocol.nop(id)
+          else if deltaAngle > 0 then RobotMqttProtocol.spinLeft(id) else RobotMqttProtocol.spinRight(id)
 
-          var deltaAngle =
-            math.atan2(rotationVector._2, rotationVector._1) - Math.atan2(directionVector._2, directionVector._1)
-          if (deltaAngle > math.Pi)
-            deltaAngle = deltaAngle - 2 * math.Pi
-          else if (deltaAngle < -math.Pi)
-            deltaAngle = deltaAngle + 2 * math.Pi
-          val angularDistance = Math.min(Math.abs(deltaAngle), 2 * Math.PI - Math.abs(deltaAngle))
-          angularDistance match
-            case _ if rotationEuclideanDistance < threshold => RobotMqttProtocol.nop(id)
-            case _ if deltaAngle > 0 => RobotMqttProtocol.spinRight(id)
-            case _ => RobotMqttProtocol.spinRight(id)
-      case Forward(actuation) =>
+      case Forward(desired) =>
         Future:
+          // Current heading (transform from stored angle to unit vector)
           val direction = world.sensing(id)
-          val directionVector = (-Math.sin(direction), Math.cos(direction))
-          val adjustedVector = (actuation._1, actuation._2)
-          val vectorDirection = Math.atan2(actuation._2, actuation._1)
-          val vector = if (vectorDirection < 0) (-adjustedVector._1, -adjustedVector._2) else adjustedVector
-          val forwardEuclideanDistance = Math.sqrt(
-            Math.pow(vector._1 - directionVector._1, 2) +
-              Math.pow(vector._2 - directionVector._2, 2)
-          )
-          var deltaAngle = Math.atan2(vector._2, vector._1) - Math.atan2(directionVector._2, directionVector._1)
-          if (deltaAngle > math.Pi)
-            deltaAngle = deltaAngle - 2 * math.Pi
-          else if (deltaAngle < -math.Pi)
-            deltaAngle = deltaAngle + 2 * math.Pi
-          val angularDistance = Math.min(Math.abs(deltaAngle), 2 * Math.PI - Math.abs(deltaAngle))
-          angularDistance match
-            case _ if forwardEuclideanDistance < threshold => //RobotMqttProtocol.nop(id)
-              if (vectorDirection < 0) RobotMqttProtocol.backward(id) else RobotMqttProtocol.forward(id)
-            case _ if deltaAngle > 0 => RobotMqttProtocol.spinLeft(id)
-            case _ => RobotMqttProtocol.spinLeft(id)
-            // convert from -pi, pi to 0 to 2pi
-  def adjustAngle(angle: Double): Double =
-    if angle < 0 then angle + 2 * Math.PI else angle
+          val headingVector = (-Math.sin(direction), Math.cos(direction))
+          val currentAngle = math.atan2(headingVector._2, headingVector._1)
+
+          // Desired translation vector (could imply moving backward if opposite to heading)
+          val desiredVector = (desired._1, desired._2)
+
+          // Decide whether to move forward or backward based on dot product
+          val dot = headingVector._1 * desiredVector._1 + headingVector._2 * desiredVector._2
+          val moveForward = dot >= 0
+
+            // Angle of desired motion
+          val desiredAngleRaw = math.atan2(desiredVector._2, desiredVector._1)
+          // If we plan to move backward, add pi to desired angle (i.e., face opposite direction)
+          val effectiveDesiredAngle = if moveForward then desiredAngleRaw else normalizeAngle(desiredAngleRaw + math.Pi)
+
+          val deltaAngle = normalizeAngle(effectiveDesiredAngle - currentAngle)
+
+          // If almost aligned, move; else rotate with direction given by sign of delta
+          if math.abs(deltaAngle) < angleTolerance then
+            if moveForward then RobotMqttProtocol.forward(id) else RobotMqttProtocol.backward(id)
+          else if deltaAngle > 0 then RobotMqttProtocol.spinLeft(id) else RobotMqttProtocol.spinRight(id)
+

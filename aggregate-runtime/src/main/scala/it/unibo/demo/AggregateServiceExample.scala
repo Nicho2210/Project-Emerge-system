@@ -43,12 +43,10 @@ private def randomAgents(howMany: Int, maxPosition: Int): Map[ID, (Double, Doubl
     i -> (random.nextDouble() * maxPosition, random.nextDouble() * maxPosition)
   }.toMap
 
-class DirectionDemo extends BaseDemo:
-  override def main(): Actuation =
-    Rotation((-1, 0))
-object LineFormationDemo extends BaseAggregateServiceExample(LineFormation(5, 5, 1, 4.5))
 
-object CircleFormationDemo extends BaseAggregateServiceExample(CircleFormation(1, 5, 0.1, 0.05))
+object LineFormationDemo extends BaseAggregateServiceExample(LineFormation(0.6, 5, 0.1, 0.6))
+
+object CircleFormationDemo extends BaseAggregateServiceExample(CircleFormation(1, 5, 0.1, 0.6))
 
 object HeadlessFormation extends App:
   println("Starting headless formation demo...")
