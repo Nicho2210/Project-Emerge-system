@@ -32,7 +32,6 @@ abstract class ShapeFormation(leaderSelected: Int, stabilityThreshold: Double, c
       .map(_._2._1)
       //.view.mapValues(_._1).values
     val obstacleAvoidanceVector = neighborsInCollisionArea.foldLeft(Point3D.Zero)(_ + _) * -1
-    println(obstacleAvoidanceVector)
     val resultingVector = (Point3D(local._1, local._2, 0))  // + obstacleAvoidanceVector
     val res =
       if distanceTowardGoal < stabilityThreshold then Rotation(0, 1)

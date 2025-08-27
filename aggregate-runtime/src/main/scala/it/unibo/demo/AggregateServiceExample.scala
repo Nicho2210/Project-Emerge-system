@@ -4,7 +4,8 @@ import it.unibo.core.aggregate.AggregateIncarnation.*
 import it.unibo.core.aggregate.AggregateOrchestrator
 import it.unibo.core.{Boundary, Environment, UpdateLoop}
 import it.unibo.demo.provider.MqttProvider
-import it.unibo.demo.robot.RobotUpdateMqtt
+import it.unibo.demo.robot.Actuation.Rotation
+import it.unibo.demo.robot.{Actuation, RobotUpdateMqtt}
 import it.unibo.demo.scenarios.{BaseDemo, CircleFormation, LineFormation}
 import it.unibo.mqtt.MqttContext
 import it.unibo.utils.Position.given
@@ -21,7 +22,7 @@ class BaseAggregateServiceExample(demoToLaunch: BaseDemo) extends App:
   val agents = 12
   val provider = MqttProvider()
   provider.start()
-  val update = RobotUpdateMqtt(0.6)
+  val update = RobotUpdateMqtt(0.2)
   val aggregateOrchestrator =
     AggregateOrchestrator[Position, Info, Actuation]((0 to 12).toSet, demoToLaunch)
 
@@ -42,6 +43,9 @@ private def randomAgents(howMany: Int, maxPosition: Int): Map[ID, (Double, Doubl
     i -> (random.nextDouble() * maxPosition, random.nextDouble() * maxPosition)
   }.toMap
 
+class DirectionDemo extends BaseDemo:
+  override def main(): Actuation =
+    Rotation((-1, 0))
 object LineFormationDemo extends BaseAggregateServiceExample(LineFormation(5, 5, 1, 4.5))
 
 object CircleFormationDemo extends BaseAggregateServiceExample(CircleFormation(1, 5, 0.1, 0.05))

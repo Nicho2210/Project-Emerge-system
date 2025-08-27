@@ -22,8 +22,8 @@ class RobotUpdateMqtt(threshold: Double)(using ExecutionContext, MqttContext)
       case Rotation(actuation) =>
         Future:
           val direction = world.sensing(id)
-          //println((id, direction))
-          val directionVector = (Math.cos(direction), Math.sin(direction))
+          println((id, direction))
+          val directionVector = (-Math.sin(direction), Math.cos(direction))
           val rotationVector = (actuation._1, actuation._2)
           val rotationEuclideanDistance = Math.sqrt(
             Math.pow(rotationVector._1 - directionVector._1, 2) +
@@ -44,7 +44,7 @@ class RobotUpdateMqtt(threshold: Double)(using ExecutionContext, MqttContext)
       case Forward(actuation) =>
         Future:
           val direction = world.sensing(id)
-          val directionVector = (Math.cos(direction), Math.sin(direction))
+          val directionVector = (-Math.sin(direction), Math.cos(direction))
           val adjustedVector = (actuation._1, actuation._2)
           val vectorDirection = Math.atan2(actuation._2, actuation._1)
           val vector = if (vectorDirection < 0) (-adjustedVector._1, -adjustedVector._2) else adjustedVector
