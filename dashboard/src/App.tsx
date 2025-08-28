@@ -39,20 +39,21 @@ function App() {
     setResetCameraTrigger((prev) => prev + 1);
   }, []);
 
+  useEffect(() => {
+    commandPublisher.publishLeaderCommand(5);
+  }, []);
+
   const handleResetCamera = () => {
     setResetCameraTrigger((prev) => prev + 1);
   };
 
   const handleRobotClick = (id: number | null) => {
-    console.warn(`Robot clicked: ${id}`);
-    console.warn(`Selected robot: ${robots}`)
-    console.warn(`Selected robot ID: ${id}`);
     setSelectedRobot((prevSelectedRobot) => (prevSelectedRobot === id ? null : id));
   };
 
   return (
     <div className="app-layout"> 
-      <TopBar onResetCamera={handleResetCamera} />
+      <TopBar onResetCamera={handleResetCamera} commandPublisher={commandPublisher} />
       <div className="main-content">
         <div className="map-container">
           <RobotScene robots={robots} trigger={resetCameraTrigger} onRobotClick={handleRobotClick} /> 

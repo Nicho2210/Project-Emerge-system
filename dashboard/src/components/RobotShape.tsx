@@ -14,27 +14,27 @@ function RobotShape({ data, onClick }: { data: RobotData; onClick?: (id : number
   // Load the GLB model
   const { scene } = useGLTF('/src/assets/base.glb');
   
-  // Use the original model with leader/follower coloring
-  useMemo(() => {
-    const clonedScene = scene.clone();
-    const color = isLeader ? 'gold' : 'skyblue';
+  // // Use the original model with leader/follower coloring
+  // useMemo(() => {
+  //   const clonedScene = scene.clone();
+  //   const color = isLeader ? 'gold' : 'skyblue';
     
-    // Ensure all meshes in the model cast shadows and apply color
-    clonedScene.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        if (child.material instanceof THREE.Material) {
-          child.material = child.material.clone();
-          if ('color' in child.material) {
-            (child.material as THREE.MeshStandardMaterial).color = new THREE.Color(color);
-          }
-        }
-      }
-    });
+  //   // Ensure all meshes in the model cast shadows and apply color
+  //   clonedScene.traverse((child) => {
+  //     if (child instanceof THREE.Mesh) {
+  //       child.castShadow = true;
+  //       child.receiveShadow = true;
+  //       if (child.material instanceof THREE.Material) {
+  //         child.material = child.material.clone();
+  //         if ('color' in child.material) {
+  //           (child.material as THREE.MeshStandardMaterial).color = new THREE.Color(color);
+  //         }
+  //       }
+  //     }
+  //   });
     
-    return clonedScene;
-  }, [scene, isLeader]);
+  //   return clonedScene;
+  // }, [scene, isLeader]);
 
   useFrame(() => {
     if (meshRef.current) {
@@ -60,20 +60,26 @@ function RobotShape({ data, onClick }: { data: RobotData; onClick?: (id : number
         }}
       >
         {/* cube as a mesh */}
-        <mesh 
+        {/* <mesh 
           geometry={new THREE.ConeGeometry(0.5, 3, 32)} 
           material={new THREE.MeshStandardMaterial({ color: isLeader ? 'gold' : 'skyblue' })} 
-          position={[0, 0.5, 0]} // Position the cone above the ground
+          position={[0, 0.05, 0]} // Position the cone above the ground
           rotation={[Math.PI / 2, 0, 0]} // Tip points along Z axis
-          scale={[11, 7, 17]} // Scale
+          scale={[0.11, 0.07, 0.17]} // Scale
           
+        /> */}
+        <mesh 
+          geometry={new THREE.BoxGeometry(1, 1, 1)} 
+          material={new THREE.MeshStandardMaterial({ color: isLeader ? 'gold' : 'grey' })} 
+          position={[0, 0.05, 0]} // Position the cone above the ground
+          scale={[0.11, 0.07, 0.17]} // Scale
         />
         {/* <primitive 
           object={robotModel} 
           scale={[0.01, 0.01, 0.01]}
         /> */}
       </group>
-      <Text
+      {/* <Text
         ref={textRef}
         position={[position.x, 1.5, position.y]} // Position text above the mesh
         fontSize={0.5}
@@ -83,12 +89,12 @@ function RobotShape({ data, onClick }: { data: RobotData; onClick?: (id : number
         font="https://fonts.gstatic.com/s/roboto/v20/KFOmCnqEu92Fr1Mu4mxP.ttf" // Use a compatible font
       >
         {id}
-      </Text>
+      </Text> */}
     </>
   );
 }
 
 // Preload the GLB model
-useGLTF.preload('/src/assets/base.glb');
+// useGLTF.preload('/src/assets/base.glb');
 
 export default RobotShape;

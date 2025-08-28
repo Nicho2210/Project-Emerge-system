@@ -1,48 +1,28 @@
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { AccumulativeShadows, CameraControls, Grid, OrbitControls, RandomizedLight } from '@react-three/drei';
 import NeighborLines from './NeighborLines';
 import RobotShape from './RobotShape';
 import type { RobotData } from '../types/RobotData';
-import { useEffect } from 'react';
-
-
-function CameraController({ trigger }: { trigger: number }) {
-  const { camera } = useThree();
-
-  useEffect(() => {
-      camera.position.set(300, 300, 300); // Reset to default position
-      camera.lookAt(0,0,0);
-  }, [trigger, camera]);
-
-  return null;
-}
+import { memo, useEffect, useRef } from 'react';
+import * as THREE from 'three';
 
 function RobotScene({ robots, trigger, onRobotClick }: { robots: RobotData[]; trigger: number; onRobotClick: (id: number | null) => void }) {
   return (
-    <>
       <Canvas 
+        shadows
         onPointerMissed={() => onRobotClick(null)}
-        shadows // Enable shadow rendering
+        camera={{ position: [3, 5, -3], fov: 60, far: 3000}}
       > 
-        <axesHelper args={[1000]} />
-        <CameraController trigger={trigger} /> 
-        <OrbitControls enablePan={true} minPolarAngle={0} maxPolarAngle={Math.PI / 2.5} />
-        
-        {/* Lighting setup for shadows */}
-        <ambientLight intensity={0.4} />
-        <directionalLight
-          position={[10, 20, 10]}
-          intensity={1}
-          castShadow
-          shadow-mapSize={[2048, 2048]}
-          shadow-camera-far={50}
-          shadow-camera-left={-20}
-          shadow-camera-right={20}
-          shadow-camera-top={20}
-          shadow-camera-bottom={-20}
-        />
-        
+
+        <CameraController trigger={trigger} />
+
+        <Ground />
+        <axesHelper args={[500]} />
+
+
+
         <NeighborLines robots={robots} />
+
         <group> 
           {robots.map((robot) => (
             <RobotShape key={robot.id} data={robot} onClick={(id) => {
@@ -50,9 +30,54 @@ function RobotScene({ robots, trigger, onRobotClick }: { robots: RobotData[]; tr
             }} />
           ))}
         </group>
+
       </Canvas>
-    </>
+
   );
 }
+
+
+function CameraController({ trigger }: { trigger: number }) {
+
+  const cameraControlsRef = useRef<CameraControls>(null);
+
+  useEffect(() => {
+      cameraControlsRef.current?.setLookAt(1.5,2,-1.5, 1.5,0,1.5, true)
+  }, [trigger]);
+
+  return (
+    <group>
+      <CameraControls
+          ref={cameraControlsRef}
+          minPolarAngle={0}
+          maxPolarAngle={Math.PI / 2.05}
+        />
+      <directionalLight
+          position={[10, 20, 10]}
+          intensity={1}
+      />
+      <ambientLight intensity={0.2} />
+    </group>
+  )
+}
+
+
+
+function Ground() {
+  const gridConfig = {
+    cellSize: 0.2,
+    cellThickness: 0.5,
+    cellColor: '#6f6f6f',
+    sectionSize: 1,
+    sectionThickness: 0.7,
+    fadeDistance: 100,
+    fadeStrength: 1,
+    followCamera: false,
+    infiniteGrid: true
+  }
+  return <Grid position={[0, 0, 0]} args={[10, 10]} {...gridConfig} />
+}
+
+
 
 export default RobotScene;

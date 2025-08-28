@@ -19,8 +19,6 @@ export class MQTTEventStream implements EventStream {
   subscribe(callback: (robots: RobotData[]) => void): void {
     this.client.on('connect', () => {
       console.warn('Connected to MQTT broker');
-      // print robots ids
-      console.warn(this.robots)
       this.client.subscribe(`robots/+/position`);
       this.client.subscribe(`robots/+/neighbors`);
       this.client.subscribe(`leader`);
@@ -30,6 +28,15 @@ export class MQTTEventStream implements EventStream {
     this.client.on('message', (topic: string, message: Buffer) => {
       try {
         const data = JSON.parse(message.toString());
+        if(topic == 'leader') {
+          Object.values(this.robots).forEach(element => {
+            element.isLeader = false;
+          });
+          this.robots[data] = {
+            ...this.robots[data],
+            isLeader: true,
+          };
+        }
         const id = topic.split('/')[1];
         if (topic.endsWith('/position')) {
           this.updateRobotPosition(id, data);
@@ -43,7 +50,7 @@ export class MQTTEventStream implements EventStream {
             ...this.robots[id],
             isLeader: data,
           };
-        } TODO */
+        }*/
 
         callback(Object.values(this.robots) as RobotData[]); // Send the entire updated map as RobotData[]
       } catch (e) {
@@ -56,19 +63,12 @@ export class MQTTEventStream implements EventStream {
     this.robots[id] = {
       ...this.robots[id],
       id: parseInt(id, 10),
-      position: { x: data.x * 100, y: data.y * 100 },
+      position: { x: data.x, y: data.y },
       orientation: data.orientation,
     };
   }
 
-  publishCommand(command: Vector2D): void {
-    const leaderId = Object.keys(this.robots).find((id) => this.robots[id]?.isLeader);
-    if (leaderId) {
-      this.client.publish(`robot/${leaderId}/move`, JSON.stringify(command));
-    }
-  }
-
   cleanup(): void {
-    //this.client.end();
+
   }
 }

@@ -7,37 +7,26 @@ function NeighborLines({ robots }: { robots: RobotData[] }) {
   const groupRef = useRef<THREE.Group>(null);
 
   useFrame(() => {
-    if (!groupRef.current) {return;}
-      // Dispose geometries and materials before removing lines
-      while (groupRef.current.children.length > 0) {
-        const child = groupRef.current.children[0];
-        if (child instanceof THREE.Line) {
-          if (child.geometry) {
-            child.geometry.dispose();
-          }
-          if (child.material) {
-            if (Array.isArray(child.material)) {
-              child.material.forEach(mat => mat.dispose && mat.dispose());
-            } else if (child.material.dispose) {
-              child.material.dispose();
-            }
-          }
-        }
-        groupRef.current.remove(child);
-      }
+    const group = groupRef.current;
+    if (!group) return;
+    // Remove all children (lines) efficiently
+    group.clear();
+
+    // Pre-create dashed material for reuse
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 'lightgrey' });
+    //new THREE.LineDashedMaterial({ color: 'grey', dashSize: 0.01, gapSize: 0.02});
 
     robots.forEach((robot) => {
       const from = new THREE.Vector3(robot.position.x, 0, robot.position.y);
       robot.neighbors?.forEach(nid => {
         const neighbor = robots[nid];
-        if (!neighbor) {return;}
+        if (!neighbor) return;
         const to = new THREE.Vector3(neighbor.position.x, 0, neighbor.position.y);
-
         const points = [from, to];
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        const material = new THREE.LineBasicMaterial({ color: 'red' });
-        const line = new THREE.Line(geometry, material);
-        groupRef.current?.add(line);
+        const line = new THREE.Line(geometry, lineMaterial);
+        line.computeLineDistances();
+        group.add(line);
       });
     });
   });

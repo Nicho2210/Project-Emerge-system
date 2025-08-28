@@ -1,3 +1,4 @@
+
 import type { RobotData } from '../types/RobotData';
 import type { CommandPublisher } from '../utils/CommandPublisherInterface';
 import { Joystick } from 'react-joystick-component';
@@ -23,19 +24,16 @@ function ControlPanel({ commandPublisher, robot }: ControlPanelProps) {
   const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
   const [counter, setCounter] = useState(0);
 
-  //TODO is this needed? Maybe it's ok if i simply send the direction once and then I dont need to update it continuously, for now let's keep it
-
   const handleMove = (event: IJoystickUpdateEvent) => {
     if (event.x !== null && event.y !== null) {
       setJoystickPosition({ x: event.x, y: event.y });
-    
     }
-  };
+  }; 
 
   const handleStart = () => {
     setIntervalId(setInterval(() => {
       setCounter(prev => prev + 1);
-    }, 300));
+    }, 1000));
   }
 
   const handleStop = () => {
@@ -52,13 +50,10 @@ function ControlPanel({ commandPublisher, robot }: ControlPanelProps) {
 
   useEffect(() => {
     if (intervalId) {
-      const command: Vector2D = {
-        x: joystickPosition.x,
-        y: joystickPosition.y
-      };
+      const command = joystickToCommand(joystickPosition.x, joystickPosition.y);
       commandPublisher.publishMoveCommand(robot.id, command);
     }
-  }, [joystickPosition, counter, commandPublisher, robot.id, intervalId]);
+  }, [joystickPosition, counter, intervalId]);
 
   return (
     <div className="control-panel">
@@ -67,7 +62,7 @@ function ControlPanel({ commandPublisher, robot }: ControlPanelProps) {
       <div className="robot-data"> {/* Display robot data */}
           <p>X={robot.position.x}</p>
           <p>Z={robot.position.y}</p>
-        <p>Orientation: {robot.orientation}°</p>
+  <p>Orientation: {(robot.orientation * 180 / Math.PI).toFixed(1)}°</p>
         <p>Leader: {robot.isLeader ? 'Yes' : 'No'}</p>
       </div>
       
@@ -81,9 +76,22 @@ function ControlPanel({ commandPublisher, robot }: ControlPanelProps) {
         throttle={100}
       />
 
-      <button onClick={() => commandPublisher.publishLeaderCommand(robot.id, true)}>Make Leader</button> {/* Add button to make the robot the leader */}
+      <button onClick={() => commandPublisher.publishLeaderCommand(robot.id)}>Make Leader</button> {/* Add button to make the robot the leader */}
     </div>
   );
+}
+
+function joystickToCommand(x : number, y : number) : Vector2D {
+
+  const turnScale = 0.25; // Lower = smoother, less sensitive
+  let left = y - x * turnScale;
+  let right = y + x * turnScale;
+
+  // Clamp to [-1, 1]
+  left = Math.max(-1, Math.min(1, left));
+  right = Math.max(-1, Math.min(1, right));
+
+  return {x: left, y: right};
 }
 
 export default ControlPanel;
