@@ -2,7 +2,7 @@ package it.unibo.demo.provider
 
 import it.unibo.core.{Environment, EnvironmentProvider}
 import it.unibo.demo.environment.MqttEnvironment
-import it.unibo.demo.provider.MqttProtocol.{Neighborhood, RobotPosition}
+import it.unibo.demo.provider.MqttProtocol.{Leader, Neighborhood, Programs, RobotPosition}
 import it.unibo.demo.{ID, Info, Position}
 import it.unibo.mqtt.MqttContext
 import org.eclipse.paho.client.mqttv3.*
@@ -20,23 +20,39 @@ object MqttProtocol:
 
   object Neighborhood:
     val topic: String = "robots/+/neighbors"
+
+  object Programs:
+    val topic: String = "program"
+
+  object Leader:
+    val topic: String = "leader"
+
   given RW[RobotPosition] = macroRW
 
-class MqttProvider(using ExecutionContext, MqttContext) extends EnvironmentProvider[ID, Position, Info, Environment[ID, Position, Info]]:
+class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionContext, MqttContext) extends EnvironmentProvider[ID, Position, Info, Environment[ID, Position, Info]]:
   private val worldMap: ConcurrentMap[ID, (Position, Info)] = ConcurrentHashMap()
   private val neighborhood: ConcurrentMap[ID, Set[ID]] = ConcurrentHashMap()
-  override def provide(): Future[Environment[ID, (Info, Info), Info]] = Future:
+  override def provide(): Future[Environment[ID, Position, Info]] = Future:
     val currentWorld = MqttEnvironment(worldMap.asScala.toMap, neighborhood.asScala.toMap)
     worldMap.clear()
     neighborhood.clear()
     currentWorld
-
   def start(): Unit =
     val client = summon[MqttContext].client
     client.connect()
     client.subscribeWithResponse(RobotPosition.topic, (topic: String, message: MqttMessage) => {
       val robot = read[MqttProtocol.RobotPosition](message.getPayload)
-      worldMap.put(robot.robot_id.toInt, ((robot.x, robot.y), robot.orientation))
+      worldMap.put(robot.robot_id.toInt, ((robot.x, robot.y), initialConfiguration ++ Map("orientation" -> robot.orientation)))
+      ()
+    })
+    client.subscribeWithResponse(Programs.topic, (topic: String, message: MqttMessage) => {
+      val program = message.toString
+      initialConfiguration = initialConfiguration.updated("program", program)
+      ()
+    })
+    client.subscribeWithResponse(Leader.topic, (topic: String, message: MqttMessage) => {
+      val leader = message.toString
+      initialConfiguration = initialConfiguration.updated("leader", leader.toInt)
       ()
     })
     client.subscribeWithResponse(Neighborhood.topic, (topic: String, message: MqttMessage) => {

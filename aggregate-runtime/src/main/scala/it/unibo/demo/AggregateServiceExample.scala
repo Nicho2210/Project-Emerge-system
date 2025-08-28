@@ -6,7 +6,7 @@ import it.unibo.core.{Boundary, Environment, UpdateLoop}
 import it.unibo.demo.provider.MqttProvider
 import it.unibo.demo.robot.Actuation.Rotation
 import it.unibo.demo.robot.{Actuation, RobotUpdateMqtt}
-import it.unibo.demo.scenarios.{BaseDemo, CircleFormation, LineFormation}
+import it.unibo.demo.scenarios.{BaseDemo, CircleFormation, LineFormation, PointTheLeader, SquareFormation, Stop, VFormation}
 import it.unibo.mqtt.MqttContext
 import it.unibo.utils.Position.given
 
@@ -20,11 +20,16 @@ class BaseAggregateServiceExample(demoToLaunch: BaseDemo) extends App:
   private val agentsNeighborhoodRadius = 500
   private val nodeGuiSize = 10
   val agents = 12
-  val provider = MqttProvider()
+  val provider = MqttProvider(
+    Map(
+      "program" -> "vShape",
+      "leader" -> 5
+    )
+  )
   provider.start()
   val update = RobotUpdateMqtt(0.2)
   val aggregateOrchestrator =
-    AggregateOrchestrator[Position, Info, Actuation]((0 to 12).toSet, demoToLaunch)
+    AggregateOrchestrator[Position, Actuation](demoToLaunch)
 
   val render = new Boundary[ID, Position, Info]:
     override def output(environment: Environment[ID, Position, Info]): Future[Unit] =
@@ -43,10 +48,25 @@ private def randomAgents(howMany: Int, maxPosition: Int): Map[ID, (Double, Doubl
     i -> (random.nextDouble() * maxPosition, random.nextDouble() * maxPosition)
   }.toMap
 
+class AllDemoToLoad(demos: (String, BaseDemo)*) extends BaseDemo {
+  private val demosToMap: Map[String, BaseDemo] = demos.toMap
 
-object LineFormationDemo extends BaseAggregateServiceExample(LineFormation(0.6, 5, 0.1, 0.6))
+  override def main(): EXPORT = {
+    val ctx = vm.context
+    val currentProgram = sense[String]("program")
+    align(currentProgram){
+      programToLaunch => demosToMap(currentProgram)(ctx)
+    }
+  }
+}
 
-object CircleFormationDemo extends BaseAggregateServiceExample(CircleFormation(1, 5, 0.1, 0.6))
-
-object HeadlessFormation extends App:
-  println("Starting headless formation demo...")
+object ResearchNightDemos extends BaseAggregateServiceExample(
+  AllDemoToLoad(
+    "pointToLeader" -> PointTheLeader(),
+    "vShape" -> VFormation(1, - Math.PI / 4, 0.1, 0.6),
+    "squareShape" -> SquareFormation(1, 0.1, 0.6),
+    "circleShape" -> CircleFormation(1, 0.1, 0.6),
+    "lineShape" -> LineFormation(0.6, 0.1, 0.6),
+    "stop" -> Stop()
+  )
+)

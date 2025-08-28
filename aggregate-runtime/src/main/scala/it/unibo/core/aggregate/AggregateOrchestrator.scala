@@ -10,30 +10,28 @@ import it.unibo.core.{DistanceEstimator, Environment, Orchestrator}
  * @tparam Info
  * @tparam Actuation
  */
-class AggregateOrchestrator[Position, Info, Actuation](
-    agents: Set[Int],
+class AggregateOrchestrator[Position, Actuation](
     program: AggregateProgram
 )(using DistanceEstimator[Position])
-    extends Orchestrator[Int, Position, Info, Actuation]:
+    extends Orchestrator[Int, Position, Map[String, Any], Actuation]:
   private val sensorsNames = new StandardSensorNames {}
   import sensorsNames.*
-  var exports: Map[Int, EXPORT] =
-    agents.map(_ -> factory.emptyExport()).toMap
-  override def tick(world: Environment[Int, Position, Info]): Map[Int, Actuation] =
+  var exports: Map[Int, EXPORT] = Map.empty
+  override def tick(world: Environment[Int, Position, Map[String, Any]]): Map[Int, Actuation] =
     exports = (for
-      currentAgent <- agents.intersect(world.nodes)
+      currentAgent <- world.nodes
       ctx = contextFromAgent(currentAgent, world)
-      agentExport = program.round(ctx)
+      agentExport = adaptExport(program.round(ctx))
     yield currentAgent -> agentExport).toMap
     exports.map((agent, ex) => agent -> ex.root[Actuation]())
 
-  private def contextFromAgent(agent: Int, world: Environment[Int, Position, Info]): CONTEXT =
+  private def contextFromAgent(agent: Int, world: Environment[Int, Position, Map[String, Any]]): CONTEXT =
     val neighbours = world.neighbors(agent) + agent
     val neighboursPosition = neighbours.map(n => n -> world.position(n)).toMap
     val myPosition = world.position(agent)
     val myInfo = world.sensing(agent)
-    val localSensors = Map(
-      "info" -> myInfo,
+
+    val localSensors = myInfo + (
       LSNS_POSITION -> myPosition
     )
     val neighboursExports = neighbours
@@ -50,3 +48,8 @@ class AggregateOrchestrator[Position, Info, Actuation](
       lsens = localSensors,
       nbsens = Map(NBR_RANGE -> neighboursDistances, NBR_VECTOR -> neighboursDistancesVector)
     )
+
+  private def adaptExport(exp: EXPORT): EXPORT =
+    if(exp.root().getClass.isAssignableFrom(classOf[ExportImpl])) then
+      exp.root()
+    else exp
