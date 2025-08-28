@@ -29,6 +29,6 @@ lazy val root =
         libraryDependencies += "org.slf4j" % "slf4j-simple" % slf4jVersion,
         libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.5.18",
         libraryDependencies += "org.eclipse.paho" % "org.eclipse.paho.client.mqttv3" % "1.2.5",
-        assembly / mainClass := Some("it.unibo.demo.CircleFormationDemo"),
-        mainClass := Some("it.unibo.demo.CircleFormationDemo")
+        assembly / mainClass := Some("it.unibo.demo.ResearchNightDemos"),
+        mainClass := Some("it.unibo.demo.ResearchNightDemos")
     )

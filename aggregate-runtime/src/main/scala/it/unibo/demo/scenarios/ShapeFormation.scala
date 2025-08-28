@@ -183,3 +183,22 @@ class VFormation(distanceThreshold: Double, armAngle: Double, stabilityThreshold
         candidate._1 -> candidate._3
       .toMap
 
+class VerticalLineFormation(distanceThreshold: Double, stabilityThreshold: Double, collisionArea: Double)
+    extends ShapeFormation(stabilityThreshold, collisionArea):
+  // Leader at top (0,0). Other robots placed below along -Y axis at multiples of distanceThreshold.
+  override def calculateSuggestion(ordered: List[(Int, (Double, Double))]): Map[Int, (Double, Double)] =
+    if ordered.isEmpty then return Map.empty
+    var available = ordered
+    ordered.indices
+      .map: index =>
+        val candidate = available
+          .map:
+            case (id, (xPos, yPos)) =>
+              val offsetY = - (index + 1) * distanceThreshold
+              val newPos @ (newX, newY) = (xPos, yPos + offsetY) // shift downward
+              (id, math.sqrt(newX * newX + newY * newY), newPos)
+          .minBy(_._2)
+        available = available.filterNot(_._1 == candidate._1)
+        candidate._1 -> candidate._3
+      .toMap
+

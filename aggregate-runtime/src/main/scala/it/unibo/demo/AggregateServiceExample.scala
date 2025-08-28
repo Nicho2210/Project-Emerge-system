@@ -6,7 +6,7 @@ import it.unibo.core.{Boundary, Environment, UpdateLoop}
 import it.unibo.demo.provider.MqttProvider
 import it.unibo.demo.robot.Actuation.Rotation
 import it.unibo.demo.robot.{Actuation, RobotUpdateMqtt}
-import it.unibo.demo.scenarios.{BaseDemo, CircleFormation, LineFormation, PointTheLeader, SquareFormation, Stop, VFormation}
+import it.unibo.demo.scenarios.{BaseDemo, CircleFormation, LineFormation, PointTheLeader, SquareFormation, Stop, VFormation, VerticalLineFormation}
 import it.unibo.mqtt.MqttContext
 import it.unibo.utils.Position.given
 
@@ -22,7 +22,7 @@ class BaseAggregateServiceExample(demoToLaunch: BaseDemo) extends App:
   val agents = 12
   val provider = MqttProvider(
     Map(
-      "program" -> "vShape",
+      "program" -> "verticalLineShape",
       "leader" -> 5
     )
   )
@@ -67,6 +67,7 @@ object ResearchNightDemos extends BaseAggregateServiceExample(
     "squareShape" -> SquareFormation(1, 0.1, 0.6),
     "circleShape" -> CircleFormation(1, 0.1, 0.6),
     "lineShape" -> LineFormation(0.6, 0.1, 0.6),
+    "verticalLineShape" -> VerticalLineFormation(0.8, 0.1, 0.6),
     "stop" -> Stop()
   )
 )
