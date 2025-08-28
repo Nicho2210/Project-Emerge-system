@@ -15,7 +15,7 @@ function RobotShape({ data, onClick }: { data: RobotData; onClick?: (id : number
   const { scene } = useGLTF('/src/assets/base.glb');
   
   // Use the original model with leader/follower coloring
-  const robotModel = useMemo(() => {
+  useMemo(() => {
     const clonedScene = scene.clone();
     const color = isLeader ? 'gold' : 'skyblue';
     
