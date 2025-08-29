@@ -1,29 +1,20 @@
 import mqtt from 'mqtt';
-import type { Vector2D } from '../types/Vector2D';
-import type { EventStream } from './EventStreamInterface';
 import type { RobotData } from '../types/RobotData'; // Adjust the import path as necessary
+import type { EventStream } from '../types/EventStream';
 
 export class MQTTEventStream implements EventStream {
   private client: mqtt.MqttClient;
   private robots: { [key: string]: RobotData } = {};
 
-  constructor(brokerUrl: string) {
-    console.warn(`Connecting to MQTT broker at ${brokerUrl}`);
-    this.client = mqtt.connect(brokerUrl);
-    this.client.on('error', (err) => {
-      console.error('MQTT connection error:', err);
-    });
-    
-  }
+  private fps = 1;
+  private interval: NodeJS.Timeout | null = null;
 
-  subscribe(callback: (robots: RobotData[]) => void): void {
-    this.client.on('connect', () => {
-      console.warn('Connected to MQTT broker');
-      this.client.subscribe(`robots/+/position`);
-      this.client.subscribe(`robots/+/neighbors`);
-      this.client.subscribe(`leader`);
-    
-    });
+  constructor(client: mqtt.MqttClient) {
+    this.client = client;
+
+    this.client.subscribe(`robots/+/position`);
+    this.client.subscribe(`robots/+/neighbors`);
+    this.client.subscribe(`leader`);
 
     this.client.on('message', (topic: string, message: Buffer) => {
       try {
@@ -45,18 +36,23 @@ export class MQTTEventStream implements EventStream {
             ...this.robots[id],
             neighbors: data,
           };
-        } /*else if (topic.endsWith('/leader')) {
-          this.robots[id] = {
-            ...this.robots[id],
-            isLeader: data,
-          };
-        }*/
-
-        callback(Object.values(this.robots) as RobotData[]); // Send the entire updated map as RobotData[]
+        } 
       } catch (e) {
         console.error('Error processing MQTT message:', e);
       }
     });
+    
+  }
+  cleanup(): void {
+    if(this.interval){
+      clearInterval(this.interval);
+    }
+  }
+
+  subscribe(callback: (robots: RobotData[]) => void): void {
+    this.interval = setInterval(() => {
+      callback(Object.values(this.robots) as RobotData[]);
+    }, 1000 / this.fps);
   }
 
   private updateRobotPosition(id: string, data: { x: number; y: number; orientation: number }): void {
@@ -66,9 +62,5 @@ export class MQTTEventStream implements EventStream {
       position: { x: data.x, y: data.y },
       orientation: data.orientation,
     };
-  }
-
-  cleanup(): void {
-
   }
 }

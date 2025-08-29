@@ -1,6 +1,6 @@
 
 import type { RobotData } from '../types/RobotData';
-import type { CommandPublisher } from '../utils/CommandPublisherInterface';
+import type { CommandPublisher } from '../mqtt/CommandPublisherInterface';
 import { Joystick } from 'react-joystick-component';
 import { useState, useEffect } from 'react';
 import type { Vector2D } from '../types/Vector2D';

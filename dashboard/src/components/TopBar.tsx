@@ -1,14 +1,16 @@
-import type { CommandPublisher } from "../utils/CommandPublisherInterface";
+import { useMQTT } from "../mqtt/MQTTStore";
 
 interface TopBarProps {
   onResetCamera: () => void; // Added onResetCamera prop type
-  commandPublisher: CommandPublisher
 }
 
-function TopBar({onResetCamera, commandPublisher }: TopBarProps) {
+function TopBar({onResetCamera }: TopBarProps) {
+  
+  const { publisher } = useMQTT();
+  
   return (
     <div className="top-bar">
-      <select onChange={_ => commandPublisher.publishProgramCommand((_.target as HTMLSelectElement).value)}>
+      <select onChange={_ => publisher.publishProgramCommand((_.target as HTMLSelectElement).value)}>
         <option value="pointToLeader">Point to Leader</option>
         <option value="vShape">V Shape</option>
         <option value="lineShape">Line Shape</option>

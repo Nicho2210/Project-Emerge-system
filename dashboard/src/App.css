@@ -2,7 +2,7 @@
  width:100%;
 }
 
-.app-layout {
+#app {
   display: flex;
   flex-direction: column;
   width:100%;
@@ -16,10 +16,6 @@
 
 .main-content {
   display: flex;
-  flex: 1;
-}
-
-.map-container {
   flex: 1;
   background-color: #f0f0f0;
 }
