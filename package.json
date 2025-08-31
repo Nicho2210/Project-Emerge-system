@@ -12,6 +12,7 @@
   "dependencies": {
     "@react-three/drei": "^10.4.4",
     "@react-three/fiber": "^9.2.0",
+    "@react-three/postprocessing": "^3.0.4",
     "joystick-controller": "^1.1.1",
     "mqtt": "^5.13.2",
     "rc-joystick": "^1.1.0",

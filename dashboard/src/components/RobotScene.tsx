@@ -1,28 +1,24 @@
 import { Canvas, invalidate } from "@react-three/fiber";
 import Ground from "./Ground";
-import { useEffect, useState } from "react";
 import { useMQTT } from "../mqtt/MQTTStore";
 import ResettableCamera from "./ResettableCamera";
-import type { RobotData } from "../types/RobotData";
+import { Selection, Select, EffectComposer, Outline } from "@react-three/postprocessing";
+
 import Robot from "./Robot";
 
 interface RobotSceneProps {
     onRobotClick: (id: number | null) => void;
     cameraTrigger: number;
+    selectedRobotId: number | null;
 }
 
-function RobotScene({ onRobotClick, cameraTrigger }: RobotSceneProps) {
-    const [robots, setRobots] = useState<RobotData[]>([]);
+function RobotScene({ onRobotClick, cameraTrigger, selectedRobotId }: RobotSceneProps) {
 
-    const { eventStream } = useMQTT();
-    useEffect(() => {
-    eventStream.subscribe((robots) => {
-        setRobots(robots)
-        });
-        return () => {
-        eventStream.cleanup();
-        };
-    }, []);
+    const { robots } = useMQTT();
+
+    // useEffect(() => {
+    //     console.log("Robots updated:", robots);
+    // }, [robots]);
 
     return (
     <Canvas
@@ -37,9 +33,16 @@ function RobotScene({ onRobotClick, cameraTrigger }: RobotSceneProps) {
         <ambientLight intensity={0.2} />
         <ResettableCamera trigger={cameraTrigger} />
 
+        {/* Don't know why but using the border highligh effect drops performances significantly
+        <Selection>
+        <EffectComposer multisampling={8} autoClear={false}>
+          <Outline visibleEdgeColor={0xffff00} />
+        </EffectComposer> */}
+
         {robots.map((robot) => (
-            <Robot key={robot.id} robot={robot} onClick={() => onRobotClick(robot.id)} />
+            <Robot key={robot.id} robot={robot} selected={robot.id === selectedRobotId} onClick={() => onRobotClick(robot.id)} />
         ))}
+        {/* </Selection> */}
 
     </Canvas>
     )
