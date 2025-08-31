@@ -5,6 +5,8 @@ import ResettableCamera from "./ResettableCamera";
 import { Selection, Select, EffectComposer, Outline } from "@react-three/postprocessing";
 
 import Robot from "./Robot";
+import NeighborLines from "./NeighborLines";
+
 
 interface RobotSceneProps {
     onRobotClick: (id: number | null) => void;
@@ -38,6 +40,8 @@ function RobotScene({ onRobotClick, cameraTrigger, selectedRobotId }: RobotScene
         <EffectComposer multisampling={8} autoClear={false}>
           <Outline visibleEdgeColor={0xffff00} />
         </EffectComposer> */}
+
+        {/* <NeighborLines robots={robots}/> */}
 
         {robots.map((robot) => (
             <Robot key={robot.id} robot={robot} selected={robot.id === selectedRobotId} onClick={() => onRobotClick(robot.id)} />
