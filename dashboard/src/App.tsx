@@ -7,7 +7,6 @@ function App() {
   const [selectedRobot, setSelectedRobot] = useState<null | number>(null);
   const [cameraTrigger, triggerCamera] = useState(0);
 
-
   const onRobotClick = (id: number | null) => {
     setSelectedRobot((selectedRobot) => (selectedRobot === id ? null : id));
   };

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { RobotData } from '../types/RobotData';
-import { memo, useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 const geometry = new THREE.BoxGeometry(0.11, 0.07, 0.17)
 const leaderMaterial = new THREE.MeshStandardMaterial({ color: 'gold' })
@@ -11,16 +11,9 @@ interface RobotProps {
   onClick: () => void;
 }
 
-const Robot = memo(( { robot, onClick } : RobotProps) => {
+function Robot({ robot, onClick } : RobotProps) {
 
   const meshRef = useRef<THREE.Mesh>(null)
-
-  // useEffect(() => {
-  //   console.log(robot)
-  //   if (meshRef.current) {
-  //     meshRef.current.position.set(robot.position.x, 0.035, robot.position.y);
-  //   }
-  // }, [robot]);
 
   return (
    <mesh
@@ -32,7 +25,7 @@ const Robot = memo(( { robot, onClick } : RobotProps) => {
       rotation={[0, robot.orientation, 0]} // Keep the rotation around the Y-axis
     />
   );
-});
+};
 
 
 export default Robot;

@@ -6,7 +6,7 @@ export class MQTTEventStream implements EventStream {
   private client: mqtt.MqttClient;
   private robots: { [key: string]: RobotData } = {};
 
-  private fps = 1;
+  private fps = 60;
   private interval: NodeJS.Timeout | null = null;
 
   constructor(client: mqtt.MqttClient) {
