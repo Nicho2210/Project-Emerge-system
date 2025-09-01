@@ -22,7 +22,7 @@ class BaseAggregateServiceExample(demoToLaunch: BaseDemo) extends App:
   val agents = 12
   val provider = MqttProvider(
     Map(
-      "program" -> "verticalLineShape",
+      "program" -> "vShape",
       "leader" -> 5
     )
   )
