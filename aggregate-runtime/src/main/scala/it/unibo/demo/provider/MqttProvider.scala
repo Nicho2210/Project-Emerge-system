@@ -29,7 +29,7 @@ object MqttProtocol:
 
   given RW[RobotPosition] = macroRW
 
-class MqttProvider(radius: Double, var initialConfiguration: Map[String, Any])(using ExecutionContext, MqttContext) extends EnvironmentProvider[ID, Position, Info, Environment[ID, Position, Info]]:
+class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionContext, MqttContext) extends EnvironmentProvider[ID, Position, Info, Environment[ID, Position, Info]]:
   private val worldMap: ConcurrentMap[ID, (Position, Info)] = ConcurrentHashMap()
   private val neighborhood: ConcurrentMap[ID, Set[ID]] = ConcurrentHashMap()
   override def provide(): Future[Environment[ID, Position, Info]] = Future:
