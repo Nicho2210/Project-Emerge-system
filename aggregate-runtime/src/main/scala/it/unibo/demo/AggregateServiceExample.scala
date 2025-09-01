@@ -22,7 +22,7 @@ class BaseAggregateServiceExample(demoToLaunch: BaseDemo) extends App:
   val agents = 12
   val provider = MqttProvider(
     Map(
-      "program" -> "vShape",
+      "program" -> "pointToLeader",
       "leader" -> 5
     )
   )
@@ -35,7 +35,7 @@ class BaseAggregateServiceExample(demoToLaunch: BaseDemo) extends App:
     override def output(environment: Environment[ID, Position, Info]): Future[Unit] =
       Future.successful(())
 
-  UpdateLoop.loop(33)(
+  UpdateLoop.loop(100)(
     provider,
     aggregateOrchestrator,
     update,
@@ -60,14 +60,15 @@ class AllDemoToLoad(demos: (String, BaseDemo)*) extends BaseDemo {
   }
 }
 
+object TestProgram extends BaseAggregateServiceExample(SquareFormation(1, 0.1, 0.6))
 object ResearchNightDemos extends BaseAggregateServiceExample(
   AllDemoToLoad(
     "pointToLeader" -> PointTheLeader(),
-    "vShape" -> VFormation(1, - Math.PI / 4, 0.1, 0.6),
-    "squareShape" -> SquareFormation(1, 0.1, 0.6),
-    "circleShape" -> CircleFormation(1, 0.1, 0.6),
-    "lineShape" -> LineFormation(0.6, 0.1, 0.6),
-    "verticalLineShape" -> VerticalLineFormation(0.8, 0.1, 0.6),
+    "vShape" -> VFormation(0.5, - Math.PI / 4, 0.1, 0.3),
+    "squareShape" -> SquareFormation(0.6, 0.1, 0.3),
+    "circleShape" -> CircleFormation(0.8, 0.1, 0.3),
+    "lineShape" -> LineFormation(0.6, 0.1, 0.5),
+    "verticalLineShape" -> VerticalLineFormation(0.4, 0.1, 0.3),
     "stop" -> Stop()
   )
 )

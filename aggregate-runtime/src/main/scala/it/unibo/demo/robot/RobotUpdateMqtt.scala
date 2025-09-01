@@ -44,7 +44,7 @@ class RobotUpdateMqtt(threshold: Double)(using ExecutionContext, MqttContext)
           val deltaAngle = normalizeAngle(targetAngle - currentAngle)
           if rotationEuclideanDistance < threshold || math.abs(deltaAngle) < angleTolerance then
             RobotMqttProtocol.stop(id)
-          else if deltaAngle > 0 then RobotMqttProtocol.spinLeft(id) else RobotMqttProtocol.spinRight(id)
+          else if deltaAngle > 0 then RobotMqttProtocol.spinRight(id) else RobotMqttProtocol.spinLeft(id)
 
       case Forward(desired) =>
         Future:
@@ -65,5 +65,5 @@ class RobotUpdateMqtt(threshold: Double)(using ExecutionContext, MqttContext)
           // If almost aligned, move; else rotate with orientation given by sign of delta
           if math.abs(deltaAngle) < angleTolerance then
             if moveForward then RobotMqttProtocol.forward(id) else RobotMqttProtocol.backward(id)
-          else if deltaAngle > 0 then RobotMqttProtocol.spinLeft(id) else RobotMqttProtocol.spinRight(id)
+          else if deltaAngle > 0 then RobotMqttProtocol.spinRight(id) else RobotMqttProtocol.spinLeft(id)
 

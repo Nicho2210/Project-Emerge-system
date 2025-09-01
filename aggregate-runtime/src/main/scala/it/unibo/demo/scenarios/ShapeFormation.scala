@@ -15,6 +15,11 @@ abstract class ShapeFormation(stabilityThreshold: Double, collisionRange: Double
       if m < 1e-9 then Point3D.Zero else Point3D(p.x/m, p.y/m, 0)
 
   override def main(): Actuation =
+    align(this.getClass) {
+      _ => logic()
+    }
+
+  def logic(): Actuation =
     val leaderSelected = sense[Int]("leader")
     val leader = mid() == leaderSelected
     val potential = gradientCast(leader, 0.0, _ + nbrRange)

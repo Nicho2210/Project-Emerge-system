@@ -35,7 +35,7 @@ class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionCo
   override def provide(): Future[Environment[ID, Position, Info]] = Future:
     val currentWorld = MqttEnvironment(worldMap.asScala.toMap, neighborhood.asScala.toMap)
     worldMap.clear()
-    neighborhood.clear()
+    //neighborhood.clear()
     currentWorld
   def start(): Unit =
     val client = summon[MqttContext].client
@@ -46,17 +46,19 @@ class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionCo
       ()
     })
     client.subscribeWithResponse(Programs.topic, (topic: String, message: MqttMessage) => {
-      val program = message.toString
+      val program = message.toString.filter(_ != '"').toString
       initialConfiguration = initialConfiguration.updated("program", program)
       ()
     })
     client.subscribeWithResponse(Leader.topic, (topic: String, message: MqttMessage) => {
       val leader = message.toString
+      println(leader)
       initialConfiguration = initialConfiguration.updated("leader", leader.toInt)
       ()
     })
     client.subscribeWithResponse(Neighborhood.topic, (topic: String, message: MqttMessage) => {
       val extractId = topic.split("/")(1).toInt
+      val robotNeighborhood = read[List[String]](message.getPayload).map(_.toInt).toSet + extractId
       neighborhood.put(extractId, read[List[String]](message.getPayload).map(_.toInt).toSet)
       ()
     })
