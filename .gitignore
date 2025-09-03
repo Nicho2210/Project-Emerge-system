@@ -1,6 +1,8 @@
 # Created by https://www.toptal.com/developers/gitignore/api/metals,sbt,bloop,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=metals,sbt,bloop,python
 
+.idea/
+
 ### Bloop ###
 .bloop/
 
