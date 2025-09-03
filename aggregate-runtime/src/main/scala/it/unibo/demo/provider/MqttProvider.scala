@@ -16,10 +16,10 @@ import scala.jdk.CollectionConverters.MapHasAsScala
 object MqttProtocol:
   case class RobotPosition(robot_id: String, x: Double, y: Double, orientation: Double)
   object RobotPosition:
-    val topic: String = "robots/+/position"
+    val topic: String = "robot/+/position"
 
   object Neighborhood:
-    val topic: String = "robots/+/neighbors"
+    val topic: String = "robot/+/neighbors"
 
   object Programs:
     val topic: String = "program"

@@ -27,7 +27,7 @@ class BaseAggregateServiceExample(demoToLaunch: BaseDemo) extends App:
     )
   )
   provider.start()
-  val update = RobotUpdateMqtt(0.2)
+  val update = RobotUpdateMqtt(0.4)
   val aggregateOrchestrator =
     AggregateOrchestrator[Position, Actuation](demoToLaunch)
 
@@ -66,7 +66,7 @@ object ResearchNightDemos extends BaseAggregateServiceExample(
     "pointToLeader" -> PointTheLeader(),
     "vShape" -> VFormation(0.5, - Math.PI / 4, 0.1, 0.3),
     "squareShape" -> SquareFormation(0.6, 0.1, 0.3),
-    "circleShape" -> CircleFormation(0.8, 0.1, 0.3),
+    "circleShape" -> CircleFormation(0.4, 0.1, 0.2),
     "lineShape" -> LineFormation(0.6, 0.1, 0.5),
     "verticalLineShape" -> VerticalLineFormation(0.4, 0.1, 0.3),
     "stop" -> Stop()
