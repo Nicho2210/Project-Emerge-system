@@ -64,7 +64,7 @@ def main(debug=False, mqtt_url="localhost", width=640, height=480):
     print(f"Connected to MQTT broker at {mqtt_url}")
     print("Press 'q' to quit")
     print("Press 's' to save current pose")
-    mqtt_topic = "robots/"
+    mqtt_topic = "robot/"
     client.loop_start()
     # FPS calculation variables
     fps_counter = 0
