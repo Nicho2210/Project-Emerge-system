@@ -130,6 +130,52 @@ class ArUcoRobotPoseEstimator:
 
         return math.degrees(x), math.degrees(y), math.degrees(z)
 
+    def rotation_vector_to_yaw(self, rotation_vector):
+        """
+        Extract only yaw (rotation around the Z axis) from a Rodrigues rotation vector.
+        Returns yaw in degrees.
+        """
+        R, _ = cv2.Rodrigues(rotation_vector)
+        yaw = math.degrees(math.atan2(R[1, 0], R[0, 0]))  # rotation around Z
+        return yaw
+
+    def _wrap_angle(self, angle):
+        """Wrap angle to [-180, 180)."""
+        return ((angle + 180.0) % 360.0) - 180.0
+
+    def smooth_yaw(self, marker_id, yaw):
+        """Unwrap and smooth yaw to avoid flicker around +/-180 degrees."""
+        if marker_id not in self.yaw_histories:
+            self.yaw_histories[marker_id] = []
+        history = self.yaw_histories[marker_id]
+
+        if history:
+            # Last unwrapped yaw value
+            prev_unwrapped = history[-1]
+            # Current raw wrapped reading
+            raw_wrapped = self._wrap_angle(yaw)
+            # Equivalent of previous wrapped in [-180,180)
+            prev_wrapped = self._wrap_angle(prev_unwrapped)
+            # Minimal delta in (-180,180]
+            delta = raw_wrapped - prev_wrapped
+            if delta > 180:
+                delta -= 360
+            elif delta < -180:
+                delta += 360
+            # Unwrap current yaw keeping continuity
+            unwrapped = prev_unwrapped + delta
+        else:
+            unwrapped = yaw  # first sample
+
+        history.append(unwrapped)
+        # Trim history
+        self.yaw_histories[marker_id] = history[-self.max_history:]
+
+        # Average unwrapped yaw then wrap back for output
+        mean_unwrapped = float(np.mean(self.yaw_histories[marker_id]))
+        stable_yaw = self._wrap_angle(mean_unwrapped)
+        return stable_yaw
+
     def smooth_pose(self, marker_id, translation_vector):
         """
         Apply smoothing to pose estimates to reduce noise.
@@ -149,14 +195,6 @@ class ArUcoRobotPoseEstimator:
         self.pose_histories[marker_id] = self.pose_histories[marker_id][-self.max_history:]
         return translation_vector
 
-    def smooth_yaw(self, marker_id, yaw):
-        if(marker_id not in self.yaw_histories):
-            self.yaw_histories[marker_id] = []
-        history = self.yaw_histories[marker_id]
-        history.append(yaw)
-        result = np.mean(np.array(history))
-        self.yaw_histories[marker_id] = self.yaw_histories[marker_id][-self.max_history:]
-        return result
     def draw_pose_info(self, frame, corners, ids, poses):
         """
         Draw pose information on the frame.
@@ -214,11 +252,14 @@ class ArUcoRobotPoseEstimator:
 
                 # Convert to readable format
                 x, y, z = smooth_transition_vector[0][0], smooth_transition_vector[1][0], smooth_transition_vector[2][0]
-                roll, pitch, yaw = self.rotation_vector_to_euler(rotation_vector)
+                # Only compute yaw (Z-axis rotation)
+                yaw = self.rotation_vector_to_yaw(rotation_vector)
+                yaw = self.smooth_yaw(marker_id, yaw)
                 robot_info = RobotInformation(
                     marker_id=marker_id,
                     position={"x": x, "y": y, "z": z},
-                    rotation={"roll": roll, "pitch": pitch, "yaw": self.smooth_yaw(marker_id, yaw)},
+                    # Keep structure stable: roll/pitch set to 0 for consumers expecting them
+                    rotation={"roll": 0.0, "pitch": 0.0, "yaw": yaw},
                     distance=np.linalg.norm(smooth_transition_vector),
                     rotation_vector=rotation_vector,
                     transition_vector=smooth_transition_vector,
