@@ -3,7 +3,7 @@ import json
 import os
 from flask import Flask, request, jsonify
 import paho.mqtt.client as mqtt
-
+import time
 app = Flask(__name__)
 
 
@@ -96,6 +96,14 @@ def index():
     global neighborhood_type, radius_value
     return f"<h2>Neighborhood System</h2><p>Type: <b>{neighborhood_type}</b></p><p>Radius: <b>{radius_value}</b></p>", 200
 
+def clean_up():
+    while True:
+        robot_positions = {}
+        last_neighbors_sent = {}
+        update_counter = {}
+        time.sleep(1)
+
 if __name__ == '__main__':
     threading.Thread(target=mqtt_thread, daemon=True).start()
+    threading.Thread(target=clean_up, daemon=True).start()
     app.run(host='0.0.0.0', port=5000)

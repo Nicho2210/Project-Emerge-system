@@ -23,7 +23,7 @@ class BaseAggregateServiceExample(demoToLaunch: BaseDemo) extends App:
   val provider = MqttProvider(
     Map(
       "program" -> "pointToLeader",
-      "leader" -> 5
+      "leader" -> 12
     )
   )
   provider.start()

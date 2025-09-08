@@ -17,7 +17,7 @@ class RobotUpdateMqtt(threshold: Double)(using ExecutionContext, MqttContext)
     extends EnvironmentUpdate[ID, Position, Actuation, Info, Environment[ID, Position, Info]]:
 
   // Small angular tolerance to avoid oscillations when almost aligned (in radians)
-  private val angleTolerance = 20.0 * math.Pi / 180.0 // 5 degrees
+  private val angleTolerance = 10.0 * math.Pi / 180.0 // 5 degrees
 
   private def normalizeAngle(a: Double): Double =
     var x = a
@@ -42,8 +42,11 @@ class RobotUpdateMqtt(threshold: Double)(using ExecutionContext, MqttContext)
           val currentAngle = math.atan2(currentVector._2, currentVector._1)
           val targetAngle = math.atan2(targetVector._2, targetVector._1)
           val deltaAngle = normalizeAngle(targetAngle - currentAngle)
-
-          if (math.abs(deltaAngle) > math.abs(((Math.PI) -angleTolerance))) then
+          if(id == 12) {
+            println(deltaAngle)
+            println(angleTolerance)
+          }
+          if (math.abs(deltaAngle) < angleTolerance) then
             RobotMqttProtocol.stop(id)
           else if deltaAngle > 0 then RobotMqttProtocol.spinLeft(id) else RobotMqttProtocol.spinRight(id)
 
@@ -67,7 +70,7 @@ class RobotUpdateMqtt(threshold: Double)(using ExecutionContext, MqttContext)
           val deltaAngle = normalizeAngle(targetAngle - currentAngle)
 
           // If almost aligned, move; else rotate with orientation given by sign of delta
-          if (math.abs(deltaAngle) > math.abs(((Math.PI) -angleTolerance))) then
+          if (math.abs(deltaAngle) < angleTolerance) then
             if moveForward then RobotMqttProtocol.forward(id) else RobotMqttProtocol.backward(id)
           else if deltaAngle > 0 then RobotMqttProtocol.spinLeft(id) else RobotMqttProtocol.spinRight(id)
 

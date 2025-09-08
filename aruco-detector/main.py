@@ -60,10 +60,10 @@ class PosesInfo:
 
     def get_all_poses_greater_than_ticks(self, min_ticks):
         return [pose for pose in self.poses.values() if pose.ticks > min_ticks]
-    
+
     def __repr__(self):
         return f"PosesInfo(poses={self.poses})"
-    
+
 poses_info = PosesInfo()
 def main(debug=False, mqtt_url="localhost", width=640, height=480):
     """
@@ -71,7 +71,7 @@ def main(debug=False, mqtt_url="localhost", width=640, height=480):
     """
 
     # Initialize camera
-    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)  # Use 0 for default camera
+    cap = cv2.VideoCapture(1) # cv2.VideoCapture(4, cv2.CAP_V4L2)  # Use 0 for default camera
     fourcc = cv2.VideoWriter_fourcc(*"MJPG")
     cap.set(cv2.CAP_PROP_FOURCC, fourcc)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
@@ -89,7 +89,7 @@ def main(debug=False, mqtt_url="localhost", width=640, height=480):
     camera_matrix, distortion_coefficients = calibrate_camera()
 
     # Initialize pose estimator
-    pose_estimator = ArUcoRobotPoseEstimator(camera_matrix, distortion_coefficients, marker_size=0.067, smooting_history=5)
+    pose_estimator = ArUcoRobotPoseEstimator(camera_matrix, distortion_coefficients, marker_size=0.067, smooting_history=10)
 
     # Initialize MQTT client
     print(f"Connecting to MQTT broker... {mqtt_url}")
@@ -124,7 +124,7 @@ def main(debug=False, mqtt_url="localhost", width=640, height=480):
                     f"Rot({rot['roll']:.1f}, {rot['pitch']:.1f}, {rot['yaw']:.1f})"
                 )
             poses_info.update_pose(pose_info.marker_id, pos, rot)
-            
+
             # Draw pose information on frame
             if debug:
                 corners, ids, _ = pose_estimator.detect_markers(frame)
