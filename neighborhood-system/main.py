@@ -17,8 +17,8 @@ update_counter = {}
 # Read MQTT broker URL and port from environment variables
 MQTT_BROKER = os.environ.get('MQTT_BROKER', 'localhost')
 MQTT_PORT = int(os.environ.get('MQTT_PORT', '1883'))
-POSITION_TOPIC = 'robots/+/position'
-NEIGHBORS_TOPIC = 'robots/{}/neighbors'
+POSITION_TOPIC = 'robot/+/position'
+NEIGHBORS_TOPIC = 'robot/{}/neighbors'
 
 # --- MQTT Logic ---
 def on_connect(client, userdata, flags, rc):

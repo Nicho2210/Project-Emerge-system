@@ -13,7 +13,7 @@ export class MQTTCommandPublisher implements CommandPublisher {
   }
 
   publishMoveCommand(robotId: number, command: MoveCommand): void {
-    this.client.publish(`robots/${robotId}/move`, JSON.stringify({left: command.left, right: command.right}));
+    this.client.publish(`robot/${robotId}/move`, JSON.stringify({left: command.left, right: command.right}));
   }
 
   publishLeaderCommand(robotId: number): void {
