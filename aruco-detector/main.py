@@ -29,6 +29,42 @@ def calibrate_camera():
         return camera_matrix, distortion_coefficients
 
 
+class PoseInfo:
+    def __init__(self, marker_id, position, rotation):
+        self.marker_id = marker_id
+        self.position = position
+        self.rotation = rotation
+        self.ticks = 0  # Initialize ticks to zero
+
+    def __repr__(self):
+        return f"PoseInfo(marker_id={self.marker_id}, position={self.position}, rotation={self.rotation})"
+
+class PosesInfo:
+    def __init__(self):
+        self.poses = {}
+
+    def update_pose(self, marker_id, position, rotation):
+        if marker_id not in self.poses:
+            self.poses[marker_id] = PoseInfo(marker_id, position, rotation)
+        else:
+            self.poses[marker_id].position = position
+            self.poses[marker_id].rotation = rotation
+        self.poses[marker_id].ticks += 1  # Increment ticks on each update
+
+    def remove_poses_not_in_list(self, valid_ids):
+        for marker_id in list(self.poses.keys()):
+            if marker_id not in valid_ids:
+                del self.poses[marker_id]
+    def get_pose(self, marker_id):
+        return self.poses.get(marker_id, None)
+
+    def get_all_poses_greater_than_ticks(self, min_ticks):
+        return [pose for pose in self.poses.values() if pose.ticks > min_ticks]
+    
+    def __repr__(self):
+        return f"PosesInfo(poses={self.poses})"
+    
+poses_info = PosesInfo()
 def main(debug=False, mqtt_url="localhost", width=640, height=480):
     """
     Main function to run the robot pose estimation system.
@@ -53,7 +89,7 @@ def main(debug=False, mqtt_url="localhost", width=640, height=480):
     camera_matrix, distortion_coefficients = calibrate_camera()
 
     # Initialize pose estimator
-    pose_estimator = ArUcoRobotPoseEstimator(camera_matrix, distortion_coefficients, marker_size=0.067, smooting_history=10)
+    pose_estimator = ArUcoRobotPoseEstimator(camera_matrix, distortion_coefficients, marker_size=0.067, smooting_history=5)
 
     # Initialize MQTT client
     print(f"Connecting to MQTT broker... {mqtt_url}")
@@ -81,28 +117,37 @@ def main(debug=False, mqtt_url="localhost", width=640, height=480):
             # Print pose information
             pos = pose_info.position
             rot = pose_info.rotation
-            print(
-                f"\rMarker {pose_info.marker_id}: "
-                f"Pos({pos['x']:.3f}, {pos['y']:.3f}, {pos['z']:.3f}) "
-                f"Rot({rot['roll']:.1f}, {rot['pitch']:.1f}, {rot['yaw']:.1f})"
-            )
-            client.publish(
-                f"{mqtt_topic}{pose_info.marker_id}/position",
-                json.dumps(
-                    {
-                        "x": float(pos["x"]) * -1,
-                        "y": float(pos["y"]) * -1,
-                        "orientation": float(rot["yaw"]) * math.pi / 180.0,
-                        "robot_id": int(pose_info.marker_id),
-                    }
-                ),
-            )
+            if(debug):
+                print(
+                    f"\rMarker {pose_info.marker_id}: "
+                    f"Pos({pos['x']:.3f}, {pos['y']:.3f}, {pos['z']:.3f}) "
+                    f"Rot({rot['roll']:.1f}, {rot['pitch']:.1f}, {rot['yaw']:.1f})"
+                )
+            poses_info.update_pose(pose_info.marker_id, pos, rot)
+            
             # Draw pose information on frame
             if debug:
                 corners, ids, _ = pose_estimator.detect_markers(frame)
                 poses = pose_estimator.estimate_pose(corners, ids)
                 frame = pose_estimator.draw_pose_info(frame, corners, ids, poses)
-
+        # Remove poses not detected in this frame
+        detected_ids = [pose_info.marker_id for pose_info in pose_infos]
+        poses_info.remove_poses_not_in_list(detected_ids)
+        # Publish all poses with ticks > 30
+        for pose in poses_info.get_all_poses_greater_than_ticks(5):
+            pos = pose.position
+            rot = pose.rotation
+            client.publish(
+                f"{mqtt_topic}{pose.marker_id}/position",
+                json.dumps(
+                    {
+                        "x": float(pos["x"]) * -1,
+                        "y": float(pos["y"]) * -1,
+                        "orientation": float(rot["yaw"]) * math.pi / 180.0,
+                        "robot_id": int(pose.marker_id),
+                    }
+                ),
+            )
         # Display frame in debug mode
         if debug:
             cv2.imshow("Robot Pose Estimation", frame)
