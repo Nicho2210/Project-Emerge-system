@@ -20,7 +20,7 @@ function App() {
           <RobotScene onRobotClick={onRobotClick} cameraTrigger={cameraTrigger} selectedRobotId={selectedRobotId} />
         </div>
         <div className="sidebar">
-          {selectedRobotId !== null && <ControlPanel robotId={selectedRobotId} />}
+          <ControlPanel robotId={selectedRobotId} selectRobot={onRobotClick}/>
         </div>
       </div>
     </div>

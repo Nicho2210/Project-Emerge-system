@@ -30,7 +30,7 @@ function RobotScene({ onRobotClick, cameraTrigger, selectedRobotId }: RobotScene
         camera={{ position: [3, 5, -3], fov: 60, far: 3000}}
     >
         <Ground />
-        <axesHelper args={[500]} />
+        {/* <axesHelper args={[500]} /> */}
         <directionalLight position={[10, 20, 10]} intensity={1} />
         <ambientLight intensity={0.2} />
         <ResettableCamera trigger={cameraTrigger} />

@@ -5,15 +5,35 @@ import type { RobotData } from "../types/RobotData";
 import { useRef, useState } from "react";
 
 const joystickSize = 200;
-const turnScale = 0.3; // Lower = smoother, less sensitive
+const turnScale = 0.7; // Lower = smoother, less sensitive
 const joystickUpdateFrequency = 200; //ms
 
-function ControlPanel({ robotId }: { robotId: number }) {
+interface ControlPanelProps {
+  robotId: number | null
+  selectRobot: (id: number | null) => void
+}
+
+function ControlPanel({ robotId, selectRobot }: ControlPanelProps) {
     const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
     const { robots, publisher } = useMQTT();
     const joystick = useRef<Joystick | null>(null);
+    const [inputRobotId, setInputRobotId] = useState<number>(0);
 
-    const selectedRobot: RobotData | undefined = robots.find(robot => robot.id === robotId);
+    let selectedRobot: RobotData | undefined = 
+        robotId == null ? robots.find(robot => robot.id === robotId) : undefined;
+
+    //IF the robot is not detected, we can still control it like this
+    let fakeSelected =  robotId != null ? {
+      id: robotId, 
+      position: {x: 0, y: 0}, 
+      isLeader: false, 
+      neighbors: [], 
+      orientation: 90
+    } : undefined
+
+    if(robotId != null && !selectedRobot){
+        selectedRobot = fakeSelected
+    }
 
     function handleStart(): void {
         if (joystick.current) {
@@ -41,6 +61,13 @@ function ControlPanel({ robotId }: { robotId: number }) {
         let x = relativeX / (joystickSize / 2) * (distance / 100);
         let y = - relativeY / (joystickSize / 2) * (distance / 100);
 
+        x = -x //correction for whatever reason
+
+
+        //this instead fixes the backward turning
+        let inverted = y > 0 ? 1 : -1
+        x = inverted*x
+
         let left = y + x * turnScale;
         let right = y - x * turnScale;
 
@@ -49,12 +76,20 @@ function ControlPanel({ robotId }: { robotId: number }) {
         right /= maxMag;
 
         if (selectedRobot) {
+            console.log({left, right})
             publisher.publishMoveCommand(selectedRobot.id, { left, right });
         }
     }
 
     return (
         <div className="control-panel">
+            <input className="robot-id"
+                type="number"
+                value={inputRobotId}
+                onChange={e => setInputRobotId(Number(e.target.value))}
+                min={0}
+            />
+            <button onClick={() => selectRobot(inputRobotId)}>{selectedRobot && selectedRobot.id == inputRobotId ? "De-select" : "Select"} Robot</button>
             {selectedRobot && (
                 <>
                     <h2>Robot {selectedRobot.id}</h2>

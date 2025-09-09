@@ -4,7 +4,7 @@ interface TopBarProps {
   onResetCamera: () => void; // Added onResetCamera prop type
 }
 
-function TopBar({onResetCamera }: TopBarProps) {
+function TopBar({ onResetCamera}: TopBarProps) {
   
   const { publisher } = useMQTT();
   

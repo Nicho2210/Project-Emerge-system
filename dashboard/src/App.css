@@ -31,6 +31,26 @@
   text-align: left;
 }
 
+.robot-id {
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  padding: 0.5em 1em;
+  font-size: 1em;
+  font-family: inherit;
+  background-color: #111;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  transition: border-color 0.25s, box-shadow 0.25s;
+  outline: none;
+  width: 60px;
+}
+
+.robot-id:focus {
+  border-color: #646cff;
+  box-shadow: 0 0 0 2px #646cff33;
+}
+
+
 .controls { 
   display: flex;
   flex-direction: column;

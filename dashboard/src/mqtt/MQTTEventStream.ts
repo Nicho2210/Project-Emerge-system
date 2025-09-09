@@ -23,19 +23,23 @@ export class MQTTEventStream implements EventStream {
           Object.values(this.robots).forEach(element => {
             element.isLeader = false;
           });
-          this.robots[data] = {
-            ...this.robots[data],
-            isLeader: true,
-          };
+          if(this.robots[data]) {
+            this.robots[data] = {
+              ...this.robots[data],
+              isLeader: true,
+            };
+          }
         }
         const id = topic.split('/')[1];
         if (topic.endsWith('/position')) {
           this.updateRobotPosition(id, data);
         } else if (topic.endsWith('/neighbors')) {
-          this.robots[id] = {
-            ...this.robots[id],
-            neighbors: data,
-          };
+          if (this.robots[id]) {
+            this.robots[id] = {
+              ...this.robots[id],
+              neighbors: data,
+            };
+          }
         } 
       } catch (e) {
         console.error('Error processing MQTT message:', e);
