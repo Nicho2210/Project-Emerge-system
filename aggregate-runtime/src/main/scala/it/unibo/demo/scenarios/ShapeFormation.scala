@@ -4,7 +4,7 @@ import it.unibo.demo.robot.Actuation
 import it.unibo.demo.robot.Actuation.{Forward, NoOp, Rotation, Stop}
 import it.unibo.scafi.space.Point3D
 import it.unibo.scafi.space.optimization.RichPoint3D
-abstract class ShapeFormation(stabilityThreshold: Double, collisionRange: Double) extends BaseDemo:
+abstract class ShapeFormation() extends BaseDemo:
   private val repulsionStrength = 0.6
   private val maxRepulsion = 2
 
@@ -21,6 +21,8 @@ abstract class ShapeFormation(stabilityThreshold: Double, collisionRange: Double
 
   def logic(): Actuation =
     val leaderSelected = sense[Int]("leader")
+    val stabilityThreshold = sense[Double]("stabilityThreshold")
+    val collisionArea = sense[Double]("collisionArea")
     val leader = mid() == leaderSelected
     val potential = gradientCast(leader, 0.0, _ + nbrRange)
     val directionTowardsLeader =
@@ -41,9 +43,9 @@ abstract class ShapeFormation(stabilityThreshold: Double, collisionRange: Double
     val repulsionSum = neighborMap.values
       .map { p =>
         val d = p.magnitude
-        if d < 1e-9 || d >= collisionRange then Point3D.Zero
+        if d < 1e-9 || d >= collisionArea then Point3D.Zero
         else
-          val proximity = math.max(0.0, 1.0 - d / collisionRange) // 0..1
+          val proximity = math.max(0.0, 1.0 - d / collisionArea) // 0..1
           val weight = repulsionStrength * proximity / (d * d) // stronger when closer
           (p.normalize * weight) * -1.0
       }
@@ -66,8 +68,7 @@ abstract class ShapeFormation(stabilityThreshold: Double, collisionRange: Double
 
   def calculateSuggestion(ordered: List[(Int, (Double, Double))]): Map[Int, (Double, Double)]
 
-class LineFormation(distanceThreshold: Double, stabilityThreshold: Double, collisionArea: Double)
-    extends ShapeFormation(stabilityThreshold, collisionArea: Double):
+class LineFormation extends ShapeFormation():
   override def calculateSuggestion(ordered: List[(Int, (Double, Double))]): Map[Int, (Double, Double)] =
     val (leftSlots, rightSlots) = ordered.indices.splitAt(ordered.size / 2)
     var devicesAvailable = ordered
@@ -98,8 +99,13 @@ class LineFormation(distanceThreshold: Double, stabilityThreshold: Double, colli
       .toMap
     leftCandidates ++ rightCandidates
 
-class CircleFormation(radius: Double, stabilityThreshold: Double, collisionArea: Double)
-    extends ShapeFormation(stabilityThreshold, collisionArea: Double):
+  private def distanceThreshold: Double = sense(LineFormation.INTER_DISTANCE_SENSING)
+
+object LineFormation:
+  val INTER_DISTANCE_SENSING = "interDistanceLine"
+  val DEFAULTS = Map(INTER_DISTANCE_SENSING -> 0.4)
+
+class CircleFormation extends ShapeFormation():
   override def calculateSuggestion(ordered: List[(Int, (Double, Double))]): Map[Int, (Double, Double)] =
     val division = (math.Pi * 2) / ordered.size
     val precomputedAngels = ordered.indices.map(i => division * (i + 1))
@@ -116,6 +122,8 @@ class CircleFormation(radius: Double, stabilityThreshold: Double, collisionArea:
         candidate._1 -> candidate._3
       .toMap
 
+  private def radius: Double = sense(CircleFormation.RADIUS_SENSING)
+
   private def removeDeviceFromId(id: Int, devices: List[(Int, (Double, Double))]): List[(Int, (Double, Double))] =
     devices.filterNot: (currentId, _) =>
       currentId == id
@@ -130,8 +138,11 @@ class CircleFormation(radius: Double, stabilityThreshold: Double, collisionArea:
       .minBy(_._1)
       ._1
 
-class SquareFormation(distanceThreshold: Double, stabilityThreshold: Double, collisionArea: Double)
-    extends ShapeFormation(stabilityThreshold, collisionArea: Double):
+object CircleFormation:
+  val RADIUS_SENSING: String = "radius"
+  val DEFAULTS: Map[String, Double] = Map(RADIUS_SENSING -> 0.6)
+
+class SquareFormation extends ShapeFormation():
   override def calculateSuggestion(ordered: List[(Int, (Double, Double))]): Map[Int, (Double, Double)] =
     if ordered.isEmpty then return Map.empty
     val n = ordered.size
@@ -149,8 +160,8 @@ class SquareFormation(distanceThreshold: Double, stabilityThreshold: Double, col
           .map:
             case (id, (xPos, yPos)) =>
               // target absolute vector from leader for this grid cell
-              val targetX = gx * distanceThreshold
-              val targetY = gy * distanceThreshold
+              val targetX = gx * distanceBetweenNodes
+              val targetY = gy * distanceBetweenNodes
               // Following existing pattern, combine with current vector (acts like bias towards current pos)
               val newPos @ (newXpos, newYpos) = (targetX + xPos, targetY + yPos)
               (id, math.sqrt(newXpos * newXpos + newYpos * newYpos), newPos)
@@ -159,16 +170,20 @@ class SquareFormation(distanceThreshold: Double, stabilityThreshold: Double, col
         candidate._1 -> candidate._3
       .toMap
 
-class VFormation(distanceThreshold: Double, armAngle: Double, stabilityThreshold: Double, collisionArea: Double)
-    extends ShapeFormation(stabilityThreshold, collisionArea):
+  private def distanceBetweenNodes: Double = sense(SquareFormation.INTER_DISTANCE_SENSING)
+object SquareFormation:
+  val INTER_DISTANCE_SENSING = "interDistanceSquare"
+  val DEFAULTS: Map[String, Double] = Map(INTER_DISTANCE_SENSING -> 0.4)
+
+class VFormation extends ShapeFormation():
   // armAngle: angle (in radians) of each arm relative to the x-axis (default suggestion: math.Pi/4)
   override def calculateSuggestion(ordered: List[(Int, (Double, Double))]): Map[Int, (Double, Double)] =
     if ordered.isEmpty then return Map.empty
     val n = ordered.size
     val leftCount = n / 2
     val rightCount = n - leftCount
-    val dx = distanceThreshold * math.cos(armAngle)
-    val dy = distanceThreshold * math.sin(armAngle)
+    val dx = distanceBetweenNodes * math.cos(armAngle)
+    val dy = distanceBetweenNodes * math.sin(armAngle)
 
     // Targets: leader apex assumed at (0,0) (leader itself not in ordered list)
     val targetsLeft = (1 to leftCount).map(k => (-k * dx, k * dy))
@@ -188,8 +203,14 @@ class VFormation(distanceThreshold: Double, armAngle: Double, stabilityThreshold
         candidate._1 -> candidate._3
       .toMap
 
-class VerticalLineFormation(distanceThreshold: Double, stabilityThreshold: Double, collisionArea: Double)
-    extends ShapeFormation(stabilityThreshold, collisionArea):
+  private def distanceBetweenNodes: Double = sense(VFormation.INTER_DISTANCE_SENSING)
+  private def armAngle: Double = sense(VFormation.ANGLE_SENSING)
+object VFormation:
+  val INTER_DISTANCE_SENSING = "interDistanceV"
+  val ANGLE_SENSING = "angleV"
+  val DEFAULTS: Map[String, Double] = Map(INTER_DISTANCE_SENSING -> 0.4, ANGLE_SENSING -> - Math.PI / 4)
+
+class VerticalLineFormation extends ShapeFormation():
   // Leader at top (0,0). Other robots placed below along -Y axis at multiples of distanceThreshold.
   override def calculateSuggestion(ordered: List[(Int, (Double, Double))]): Map[Int, (Double, Double)] =
     if ordered.isEmpty then return Map.empty
@@ -199,7 +220,7 @@ class VerticalLineFormation(distanceThreshold: Double, stabilityThreshold: Doubl
         val candidate = available
           .map:
             case (id, (xPos, yPos)) =>
-              val offsetY = - (index + 1) * distanceThreshold
+              val offsetY = - (index + 1) * distanceBetweenNodes
               val newPos @ (newX, newY) = (xPos, yPos + offsetY) // shift downward
               (id, math.sqrt(newX * newX + newY * newY), newPos)
           .minBy(_._2)
@@ -207,3 +228,7 @@ class VerticalLineFormation(distanceThreshold: Double, stabilityThreshold: Doubl
         candidate._1 -> candidate._3
       .toMap
 
+  private def distanceBetweenNodes: Double = sense(VerticalLineFormation.INTER_DISTANCE_SENSING)
+object VerticalLineFormation:
+  val INTER_DISTANCE_SENSING = "interDistanceVertical"
+  val DEFAULTS = Map(INTER_DISTANCE_SENSING -> 0.4)

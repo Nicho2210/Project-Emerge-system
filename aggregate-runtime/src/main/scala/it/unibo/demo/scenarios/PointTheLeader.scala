@@ -13,5 +13,5 @@ class PointTheLeader() extends BaseDemo:
             (0.0, 0.0),
             (x, y) => (x + distanceVector._1, y + distanceVector._2)
           )
-        mux(sense[Int]("leader") == mid())(Rotation(1, 0))(Rotation(normalize(distance)))
+        mux(sense[Int]("leader") == mid())(Rotation(0, 1))(Rotation(normalize(distance))) // up
       }

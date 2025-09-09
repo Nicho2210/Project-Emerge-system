@@ -4,9 +4,8 @@ import it.unibo.core.aggregate.AggregateIncarnation.*
 import it.unibo.core.aggregate.AggregateOrchestrator
 import it.unibo.core.{Boundary, Environment, UpdateLoop}
 import it.unibo.demo.provider.MqttProvider
-import it.unibo.demo.robot.Actuation.Rotation
 import it.unibo.demo.robot.{Actuation, RobotUpdateMqtt}
-import it.unibo.demo.scenarios.{BaseDemo, CircleFormation, LineFormation, PointTheLeader, SquareFormation, Stop, VFormation, VerticalLineFormation}
+import it.unibo.demo.scenarios.*
 import it.unibo.mqtt.MqttContext
 import it.unibo.utils.Position.given
 
@@ -23,8 +22,12 @@ class BaseAggregateServiceExample(demoToLaunch: BaseDemo) extends App:
   val provider = MqttProvider(
     Map(
       "program" -> "pointToLeader",
-      "leader" -> 12
-    )
+      "leader" -> 12,
+      "collisionArea" -> 0.3,
+      "stabilityThreshold" -> 0.1,
+    ) ++ LineFormation.DEFAULTS ++ VFormation.DEFAULTS
+      ++ VerticalLineFormation.DEFAULTS ++ CircleFormation.DEFAULTS
+      ++ SquareFormation.DEFAULTS
   )
   provider.start()
   val update = RobotUpdateMqtt(0.4)
@@ -60,15 +63,15 @@ class AllDemoToLoad(demos: (String, BaseDemo)*) extends BaseDemo {
   }
 }
 
-object TestProgram extends BaseAggregateServiceExample(SquareFormation(1, 0.1, 0.6))
+object TestProgram extends BaseAggregateServiceExample(SquareFormation())
 object ResearchNightDemos extends BaseAggregateServiceExample(
   AllDemoToLoad(
     "pointToLeader" -> PointTheLeader(),
-    "vShape" -> VFormation(0.5, - Math.PI / 4, 0.1, 0.3),
-    "squareShape" -> SquareFormation(0.6, 0.1, 0.3),
-    "circleShape" -> CircleFormation(0.4, 0.1, 0.2),
-    "lineShape" -> LineFormation(0.6, 0.1, 0.5),
-    "verticalLineShape" -> VerticalLineFormation(0.4, 0.1, 0.3),
+    "vShape" -> VFormation(),
+    "squareShape" -> SquareFormation(),
+    "circleShape" -> CircleFormation(),
+    "lineShape" -> LineFormation(),
+    "verticalLineShape" -> VerticalLineFormation(),
     "stop" -> Stop()
   )
 )
