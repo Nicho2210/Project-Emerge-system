@@ -69,7 +69,6 @@ export class MQTTEventStream implements EventStream {
       id: parseInt(id, 10),
       position: { x: data.x, y: data.y },
       orientation: data.orientation,
-      isEmulated: isEmulated,
     };
   }
 }
