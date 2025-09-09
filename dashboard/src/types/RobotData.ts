@@ -6,4 +6,5 @@ export type RobotData = {
   isLeader: boolean; //true if the robot is the leader
   neighbors: number[]; //array of ids of the neighbors
   orientation: number; //degrees of rotation on the XZ plane, 0 is facing positive X
+  isEmulated: boolean;
 };
