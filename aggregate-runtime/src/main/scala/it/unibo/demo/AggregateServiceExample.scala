@@ -13,12 +13,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 private val BROKER_URL = System.getenv().getOrDefault("MQTT_URL", "tcp://localhost:1883")
-
+private val PROGRAM_FREQUENCY: Double = 10 // Hz
 class BaseAggregateServiceExample(demoToLaunch: BaseDemo) extends App:
-  given MqttContext(BROKER_URL)
-  private val agentsNeighborhoodRadius = 500
-  private val nodeGuiSize = 10
-  val agents = 12
+  given MqttContext(BROKER_URL) // This is needed for all services using MQTT (e.g., RobotUpdateMqtt, MqttProvider)
   val provider = MqttProvider(
     Map(
       "program" -> "pointToLeader",
@@ -31,28 +28,29 @@ class BaseAggregateServiceExample(demoToLaunch: BaseDemo) extends App:
       ++ CircleFormation.DEFAULTS
       ++ SquareFormation.DEFAULTS
   )
-  provider.start()
-  val update = RobotUpdateMqtt(angleThreshold = 10)
-  val aggregateOrchestrator =
-    AggregateOrchestrator[Position, Actuation](demoToLaunch)
+  provider.start() // Start listening to MQTT topics
+  val update = RobotUpdateMqtt(angleThreshold = 10) // angle threshold in degrees, used to avoid oscillations when almost aligned
+  val aggregateOrchestrator = AggregateOrchestrator[Position, Actuation](demoToLaunch)
 
+  // This is needed for the pipeline to work, but we do not want to render anything since we have a remote MQTT visualization
   val render = new Boundary[ID, Position, Info]:
     override def output(environment: Environment[ID, Position, Info]): Future[Unit] =
       Future.successful(())
 
-  UpdateLoop.loop(100)(
+  // Main loop, DO NOT CHANGE THIS!
+  UpdateLoop.loop(1 / PROGRAM_FREQUENCY * 1000)( // in milliseconds, sleep time between two iterations
     provider,
     aggregateOrchestrator,
     update,
     render
   )
 
-private def randomAgents(howMany: Int, maxPosition: Int): Map[ID, (Double, Double)] =
-  val random = new scala.util.Random
-  (1 to howMany).map { i =>
-    i -> (random.nextDouble() * maxPosition, random.nextDouble() * maxPosition)
-  }.toMap
-
+/** Main aggregate computing class, it loads and runs the selected demo
+  *
+  * @param demos
+  *   a list of pairs (name, demo) where name is the name of the demo to be used as identifier and demo is the actual
+  *   demo instance
+  */
 class AllDemoToLoad(demos: (String, BaseDemo)*) extends BaseDemo {
   private val demosToMap: Map[String, BaseDemo] = demos.toMap
 
@@ -65,7 +63,7 @@ class AllDemoToLoad(demos: (String, BaseDemo)*) extends BaseDemo {
   }
 }
 
-object TestProgram extends BaseAggregateServiceExample(SquareFormation())
+// The main object used to launch the demo, if you want, add more demos to the list
 object ResearchNightDemos extends BaseAggregateServiceExample(
   AllDemoToLoad(
     "pointToLeader" -> PointTheLeader(),

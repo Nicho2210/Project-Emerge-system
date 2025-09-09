@@ -4,7 +4,6 @@ import it.unibo.core.aggregate.AggregateIncarnation.{AggregateProgram, BlockG, S
 
 class Program extends AggregateProgram with StandardSensors with BlockG:
   def distanceVector: (Double, Double) = nbrvar[(Double, Double)](NBR_VECTOR)
-  private val neighborsMinDistance = 10.0
 
   def module(position: (Double, Double)): Double = Math.sqrt(position._1 * position._1 + position._2 * position._2)
   def normalize(position: (Double, Double)): (Double, Double) = {
