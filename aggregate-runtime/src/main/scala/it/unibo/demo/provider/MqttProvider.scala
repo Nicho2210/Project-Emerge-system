@@ -37,7 +37,7 @@ class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionCo
   private val neighborhood: ConcurrentMap[ID, Set[ID]] = ConcurrentHashMap()
   private val emulatedRobots: ConcurrentMap[ID, Boolean] = ConcurrentHashMap()
   override def provide(): Future[Environment[ID, Position, Info]] = Future:
-    val currentWorld = MqttEnvironment(worldMap.asScala.toMap, neighborhood.asScala.toMap)
+    val currentWorld = MqttEnvironment(worldMap.asScala.toMap, neighborhood.asScala.toMap, emulatedRobots.asScala.toMap)
     worldMap.clear()
     //neighborhood.clear()
     currentWorld
