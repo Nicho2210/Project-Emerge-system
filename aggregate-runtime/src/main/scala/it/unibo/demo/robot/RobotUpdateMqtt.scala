@@ -13,11 +13,11 @@ enum Actuation:
   case NoOp
   case Stop
 
-class RobotUpdateMqtt(threshold: Double)(using ExecutionContext, MqttContext)
+class RobotUpdateMqtt(angleThreshold: Double)(using ExecutionContext, MqttContext)
     extends EnvironmentUpdate[ID, Position, Actuation, Info, Environment[ID, Position, Info]]:
 
   // Small angular tolerance to avoid oscillations when almost aligned (in radians)
-  private val angleTolerance = 10.0 * math.Pi / 180.0 // 5 degrees
+  private val angleTolerance = angleThreshold * math.Pi / 180.0 // 5 degrees
 
   private def normalizeAngle(a: Double): Double =
     var x = a

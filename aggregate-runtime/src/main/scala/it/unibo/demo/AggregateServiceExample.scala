@@ -25,12 +25,14 @@ class BaseAggregateServiceExample(demoToLaunch: BaseDemo) extends App:
       "leader" -> 12,
       "collisionArea" -> 0.3,
       "stabilityThreshold" -> 0.1,
-    ) ++ LineFormation.DEFAULTS ++ VFormation.DEFAULTS
-      ++ VerticalLineFormation.DEFAULTS ++ CircleFormation.DEFAULTS
+    ) ++ LineFormation.DEFAULTS 
+      ++ VFormation.DEFAULTS
+      ++ VerticalLineFormation.DEFAULTS 
+      ++ CircleFormation.DEFAULTS
       ++ SquareFormation.DEFAULTS
   )
   provider.start()
-  val update = RobotUpdateMqtt(0.4)
+  val update = RobotUpdateMqtt(angleThreshold = 10)
   val aggregateOrchestrator =
     AggregateOrchestrator[Position, Actuation](demoToLaunch)
 
