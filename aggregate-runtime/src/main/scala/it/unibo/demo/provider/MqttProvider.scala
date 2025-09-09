@@ -2,7 +2,7 @@ package it.unibo.demo.provider
 
 import it.unibo.core.{Environment, EnvironmentProvider}
 import it.unibo.demo.environment.MqttEnvironment
-import it.unibo.demo.provider.MqttProtocol.{Leader, Neighborhood, Programs, RobotPosition}
+import it.unibo.demo.provider.MqttProtocol.{Leader, Neighborhood, Programs, RobotPosition, Emulation}
 import it.unibo.demo.{ID, Info, Position}
 import it.unibo.mqtt.MqttContext
 import org.eclipse.paho.client.mqttv3.*
@@ -35,6 +35,7 @@ object MqttProtocol:
 class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionContext, MqttContext) extends EnvironmentProvider[ID, Position, Info, Environment[ID, Position, Info]]:
   private val worldMap: ConcurrentMap[ID, (Position, Info)] = ConcurrentHashMap()
   private val neighborhood: ConcurrentMap[ID, Set[ID]] = ConcurrentHashMap()
+  private val emulatedRobots: ConcurrentMap[ID, Boolean] = ConcurrentHashMap()
   override def provide(): Future[Environment[ID, Position, Info]] = Future:
     val currentWorld = MqttEnvironment(worldMap.asScala.toMap, neighborhood.asScala.toMap)
     worldMap.clear()
@@ -63,5 +64,10 @@ class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionCo
       val extractId = topic.split("/")(1).toInt
       val robotNeighborhood = read[List[String]](message.getPayload).map(_.toInt).toSet + extractId
       neighborhood.put(extractId, read[List[String]](message.getPayload).map(_.toInt).toSet)
+      ()
+    })
+    client.subscribeWithResponse(Emulation.topic, (topic: String, message: MqttMessage) => {
+      val extractId = topic.split("/")(1).toInt
+      emulatedRobots.put(extractId, true)
       ()
     })
