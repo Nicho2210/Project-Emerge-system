@@ -21,6 +21,9 @@ object MqttProtocol:
   object Neighborhood:
     val topic: String = "robot/+/neighbors"
 
+  object Emulation:
+    val topic: String = "robot/+/emulation"
+
   object Programs:
     val topic: String = "program"
 
