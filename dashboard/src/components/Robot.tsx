@@ -8,7 +8,7 @@ const geometry = new THREE.BoxGeometry(0.11, 0.07, 0.17)
 const leaderMaterial = new THREE.MeshStandardMaterial({ color: 'gold' })
 const baseMaterial = new THREE.MeshStandardMaterial({ color: 'grey' })
 const selectedMaterial = new THREE.MeshStandardMaterial({ color: 'skyblue' })
-
+const emulatedMaterial = new THREE.MeshStandardMaterial({ color: 'orange' })
 
 
 interface RobotProps {
@@ -44,15 +44,15 @@ function Robot({ robot, selected, onClick } : RobotProps) {
       >
       <mesh
           geometry={nodes.robot_1.geometry}
-          material={robot.isLeader ? leaderMaterial : selected ? selectedMaterial : baseMaterial}
+          material={robot.isLeader ? leaderMaterial : robot.isEmulated ? emulatedMaterial : selected ? selectedMaterial : baseMaterial}
         />
        <mesh
           geometry={nodes.robot_2.geometry}
-          material={robot.isLeader ? leaderMaterial : selected ? selectedMaterial : baseMaterial}
+          material={robot.isLeader ? leaderMaterial : robot.isEmulated ? emulatedMaterial : selected ? selectedMaterial : baseMaterial}
         />
          <mesh
           geometry={nodes.robot.geometry}
-          material={robot.isLeader ? leaderMaterial : selected ? selectedMaterial : baseMaterial}
+          material={robot.isLeader ? leaderMaterial : robot.isEmulated ? emulatedMaterial : selected ? selectedMaterial : baseMaterial}
         />
     </group>
     // </Select>
