@@ -41,7 +41,7 @@ function RobotScene({ onRobotClick, cameraTrigger, selectedRobotId }: RobotScene
           <Outline visibleEdgeColor={0xffff00} />
         </EffectComposer> */}
 
-        {/* <NeighborLines robots={robots}/> */}
+        <NeighborLines robots={robots}/>
 
         {robots.map((robot) => (
             <Robot key={robot.id} robot={robot} selected={robot.id === selectedRobotId} onClick={() => onRobotClick(robot.id)} />
