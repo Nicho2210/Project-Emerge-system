@@ -1,5 +1,6 @@
 import { useMQTT } from "../mqtt/MQTTStore";
 import { useState, useEffect } from "react";
+import FormationPopup, { FORMATION_TYPES } from "./FormationPopup";
 
 interface TopBarProps {
   onResetCamera: () => void;
@@ -8,19 +9,20 @@ interface TopBarProps {
 function TopBar({ onResetCamera }: TopBarProps) {
   const { publisher } = useMQTT();
 
-  // Neighborhood logic moved here
+  // Neighborhood logic
   const [neighborhoodType, setNeighborhoodType] = useState<string>("FULL");
   const [radius, setRadius] = useState<number>(1.0);
   const flaskUrl = "http://localhost:5000/neighborhood";
 
+  // Formation state
+  const [showFormationPopup, setShowFormationPopup] = useState(false);
+  const [selectedFormation, setSelectedFormation] = useState<string>("pointToLeader");
+  const [currentFormation, setCurrentFormation] = useState<string>("pointToLeader");
+
   useEffect(() => {
-    fetch(flaskUrl)
-      .then(res => res.json())
-      .then(data => {
-        setNeighborhoodType(data.type);
-        setRadius(data.radius);
-      })
-      .catch(() => {});
+    // Optionally, fetch the current formation from backend if available
+    // For now, just set initial value
+    setCurrentFormation(selectedFormation);
   }, []);
 
   function updateNeighborhood(type: string, radiusValue?: number) {
@@ -40,20 +42,38 @@ function TopBar({ onResetCamera }: TopBarProps) {
       });
   }
 
+  function handleFormationUpdate() {
+    publisher.publishProgramCommand(selectedFormation);
+    setCurrentFormation(selectedFormation);
+    setShowFormationPopup(false);
+  }
+
+  // Get the label for the current formation
+  const currentFormationLabel =
+    FORMATION_TYPES.find(f => f.value === currentFormation)?.label || currentFormation;
+
   return (
     <div className="top-bar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-      <div>
-        <select onChange={_ => publisher.publishProgramCommand((_.target as HTMLSelectElement).value)}>
-          <option value="pointToLeader">Point to Leader</option>
-          <option value="vShape">V Shape</option>
-          <option value="lineShape">Line Shape</option>
-          <option value="circleShape">Circle Shape</option>
-          <option value="squareShape">Square Shape</option>
-          <option value="stop">Stop</option>
-        </select>
+      {/* Left: Formation controls */}
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <button onClick={() => setShowFormationPopup(true)}>
+          Update Formation
+        </button>
+        {showFormationPopup && (
+          <FormationPopup
+            selectedFormation={selectedFormation}
+            setSelectedFormation={setSelectedFormation}
+            onConfirm={handleFormationUpdate}
+            onCancel={() => setShowFormationPopup(false)}
+          />
+        )}
         <button onClick={onResetCamera} style={{ marginLeft: "1em" }}>Reset Camera</button>
       </div>
-      {/* Neighborhood controls aligned right */}
+      {/* Center: Current formation name */}
+      <div style={{ textAlign: "center", flex: 1, fontWeight: "bold", fontSize: "1.1em" }}>
+        Current Formation: {currentFormationLabel}
+      </div>
+      {/* Right: Neighborhood controls */}
       <div style={{ display: "flex", alignItems: "center" }}>
         {neighborhoodType !== "FULL" && (
           <button onClick={() => updateNeighborhood("FULL")}>
