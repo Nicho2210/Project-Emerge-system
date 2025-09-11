@@ -75,19 +75,17 @@ function ControlPanel({ robotId, selectRobot }: ControlPanelProps) {
         right /= maxMag;
 
         if (selectedRobot) {
-            console.log({left, right})
             publisher.publishMoveCommand(selectedRobot.id, { left, right });
         }
     }
 
     return (
         <div className="control-panel">
-            <input className="robot-id"
+            <input className="input-number"
                 type="number"
                 value={inputRobotId}
                 onChange={e => setInputRobotId(Number(e.target.value))}
                 min={0}
-                max={robots.length - 1}
             />
             <button onClick={() => selectRobot(inputRobotId)}>{selectedRobot && selectedRobot.id == inputRobotId ? "De-select" : "Select"} Robot</button>
             {selectedRobot && (
@@ -116,6 +114,7 @@ function ControlPanel({ robotId, selectRobot }: ControlPanelProps) {
                     </button>
                 </>
             )}
+        
         </div>
     );
 }
