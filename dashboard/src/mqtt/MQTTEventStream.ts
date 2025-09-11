@@ -5,6 +5,9 @@ import type { EventStream } from '../types/EventStream';
 export class MQTTEventStream implements EventStream {
   private client: mqtt.MqttClient;
   private robots: { [key: string]: RobotData } = {};
+  // set the default timeout for removing a robot to 2 seconds
+  private robotTimers: { [key: number]: NodeJS.Timeout } = {};
+  private DEFAULT_TIMEOUT = 2000; // milliseconds
 
   private fps = 60;
   private interval: NodeJS.Timeout | null = null;
@@ -32,6 +35,15 @@ export class MQTTEventStream implements EventStream {
         }
         const id = topic.split('/')[1];
         if (topic.endsWith('/position')) {
+          // reset the timer for each robot position update
+          if (this.robotTimers[parseInt(id, 10)]) {
+            clearTimeout(this.robotTimers[parseInt(id, 10)]);
+          }
+          // remove robot if no position update after 2 seconds
+          this.robotTimers[parseInt(id, 10)] = setTimeout(() => {
+            delete this.robots[id];
+            delete this.robotTimers[parseInt(id, 10)];
+          }, this.DEFAULT_TIMEOUT);
           this.updateRobotPosition(id, data);
         } else if (topic.endsWith('/neighbors')) {
           if (this.robots[id]) {
