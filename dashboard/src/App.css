@@ -31,7 +31,7 @@
   text-align: left;
 }
 
-.robot-id {
+.input-number {
   border-radius: 8px;
   border: 1px solid #ccc;
   padding: 0.5em 1em;
@@ -45,7 +45,7 @@
   width: 60px;
 }
 
-.robot-id:focus {
+.input-number:focus {
   border-color: #646cff;
   box-shadow: 0 0 0 2px #646cff33;
 }
