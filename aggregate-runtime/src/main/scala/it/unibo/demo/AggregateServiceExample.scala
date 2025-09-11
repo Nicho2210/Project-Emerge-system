@@ -38,7 +38,7 @@ class BaseAggregateServiceExample(demoToLaunch: BaseDemo) extends App:
       Future.successful(())
 
   // Main loop, DO NOT CHANGE THIS!
-  UpdateLoop.loop(1 / PROGRAM_FREQUENCY * 1000)( // in milliseconds, sleep time between two iterations
+  UpdateLoop.loop((1 / PROGRAM_FREQUENCY * 1000).toLong)( // in milliseconds, sleep time between two iterations
     provider,
     aggregateOrchestrator,
     update,
