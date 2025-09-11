@@ -29,12 +29,7 @@ function ControlPanel({ robotId, selectRobot }: ControlPanelProps) {
       neighbors: [], 
       orientation: 0
     } : undefined
-
-    // console.log("Selected robot:", selectedRobot);
-    // console.log("Input robot ID:", inputRobotId);
-    // console.log("Robots available:", robots.map(r => r.id));
-    // console.log("Robot ID prop:", robotId);
-
+    
     if(robotId != null && !selectedRobot){
         selectedRobot = fakeSelected
     }
