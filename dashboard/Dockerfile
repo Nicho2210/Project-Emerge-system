@@ -14,8 +14,14 @@ RUN npm install
 # Copy dashboard source code
 COPY dashboard/ ./dashboard/
 
+# Build the production bundle
+RUN npm run build
+
+# Install a simple static file server for serving the build
+RUN npm install -g serve
+
 # Expose the port
 EXPOSE 5173
 
-# Start the development server
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Start the production server
+CMD ["serve", "-s", "dashboard/dist", "-l", "5173"]
