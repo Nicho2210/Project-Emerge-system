@@ -22,7 +22,7 @@ export class MQTTEventStream implements EventStream {
     this.client.on('message', (topic: string, message: Buffer) => {
       try {
         const data = JSON.parse(message.toString());
-        if(topic == 'leader') {
+        if(topic === 'leader') {
           Object.values(this.robots).forEach(element => {
             element.isLeader = false;
           });

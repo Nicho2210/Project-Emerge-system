@@ -21,7 +21,7 @@ export const useMQTT = create<MQTTStore>()((set) => {
   const publisher = new MQTTCommandPublisher(client);
 
   // Initialize robots as an empty array
-  let robots: RobotData[] = [];
+  const robots: RobotData[] = [];
 
   eventStream.subscribe((updatedRobots) => {
     set({ robots: updatedRobots });

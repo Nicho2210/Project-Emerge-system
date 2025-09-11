@@ -19,10 +19,10 @@ function ControlPanel({ robotId, selectRobot }: ControlPanelProps) {
     const [inputRobotId, setInputRobotId] = useState<number>(0);
 
     let selectedRobot: RobotData | undefined = 
-    robotId != null ? robots.find(robot => robot.id === robotId) : undefined;
+    robotId !== null ? robots.find(robot => robot.id === robotId) : undefined;
 
     // //IF the robot is not detected, we can still control it like this
-    let fakeSelected =  robotId != null ? {
+    const fakeSelected =  robotId !== null ? {
       id: robotId, 
       position: {x: 0, y: 0}, 
       isLeader: false, 
@@ -30,14 +30,14 @@ function ControlPanel({ robotId, selectRobot }: ControlPanelProps) {
       orientation: 0
     } : undefined
     
-    if(robotId != null && !selectedRobot){
+    if(robotId !== null && !selectedRobot){
         selectedRobot = fakeSelected
     }
 
     function handleStart(): void {
         if (joystick.current) {
-            let id = setInterval(() => {
-                let coordinates = joystick.current?.state.coordinates;
+            const id = setInterval(() => {
+                const coordinates = joystick.current?.state.coordinates;
                 if (coordinates) {
                     publishCoordinates(coordinates.relativeX, coordinates.relativeY, coordinates.distance);
                 }
@@ -58,13 +58,13 @@ function ControlPanel({ robotId, selectRobot }: ControlPanelProps) {
 
     function publishCoordinates(relativeX: number, relativeY: number, distance: number): void {
         let x = relativeX / (joystickSize / 2) * (distance / 100);
-        let y = - relativeY / (joystickSize / 2) * (distance / 100);
+        const y = - relativeY / (joystickSize / 2) * (distance / 100);
 
         x = -x //correction for whatever reason
 
 
         //this instead fixes the backward turning
-        let inverted = y > 0 ? 1 : -1
+        const inverted = y > 0 ? 1 : -1
         x = inverted*x
 
         let left = y + x * turnScale;
@@ -87,7 +87,7 @@ function ControlPanel({ robotId, selectRobot }: ControlPanelProps) {
                 onChange={e => setInputRobotId(Number(e.target.value))}
                 min={0}
             />
-            <button onClick={() => selectRobot(inputRobotId)}>{selectedRobot && selectedRobot.id == inputRobotId ? "De-select" : "Select"} Robot</button>
+            <button onClick={() => selectRobot(inputRobotId)}>{selectedRobot && selectedRobot.id === inputRobotId ? "De-select" : "Select"} Robot</button>
             {selectedRobot && (
                 <>
                     <h2>Robot {selectedRobot.id}</h2>
