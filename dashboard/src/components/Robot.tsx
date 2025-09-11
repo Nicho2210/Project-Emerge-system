@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import type { RobotData } from '../types/RobotData';
-import { useRef, useState } from 'react';
-import { Select } from '@react-three/postprocessing';
+import { useRef, /*useState*/ } from 'react';
+// import { Select } from '@react-three/postprocessing';
 import { useGLTF } from '@react-three/drei';
 
-const geometry = new THREE.BoxGeometry(0.11, 0.07, 0.17)
+// const geometry = new THREE.BoxGeometry(0.11, 0.07, 0.17)
 const leaderMaterial = new THREE.MeshStandardMaterial({ color: 'gold' })
 const baseMaterial = new THREE.MeshStandardMaterial({ color: 'grey' })
 const selectedMaterial = new THREE.MeshStandardMaterial({ color: 'skyblue' })

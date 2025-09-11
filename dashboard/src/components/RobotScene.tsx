@@ -1,8 +1,8 @@
-import { Canvas, invalidate } from "@react-three/fiber";
+import { Canvas, /*invalidate*/ } from "@react-three/fiber";
 import Ground from "./Ground";
 import { useMQTT } from "../mqtt/MQTTStore";
 import ResettableCamera from "./ResettableCamera";
-import { Selection, Select, EffectComposer, Outline } from "@react-three/postprocessing";
+// import { Selection, Select, EffectComposer, Outline } from "@react-three/postprocessing";
 
 import Robot from "./Robot";
 import NeighborLines from "./NeighborLines";
