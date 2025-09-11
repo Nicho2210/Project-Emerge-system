@@ -8,7 +8,6 @@ import it.unibo.mqtt.MqttContext
 import org.eclipse.paho.client.mqttv3.*
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import upickle.default.{macroRW, ReadWriter as RW, *}
-
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentMap}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.MapHasAsScala
@@ -22,7 +21,7 @@ object MqttProtocol:
     val topic: String = "robot/+/neighbors"
 
   object Programs:
-    val topic: String = "program"
+    val topic: String = "sensing"
 
   object Leader:
     val topic: String = "leader"
@@ -46,8 +45,12 @@ class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionCo
       ()
     })
     client.subscribeWithResponse(Programs.topic, (topic: String, message: MqttMessage) => {
-      val program = message.toString.filter(_ != '"').toString
-      initialConfiguration = initialConfiguration.updated("program", program)
+      import ujson.*
+      val program = ujson.read(message.getPayload)
+      val newConfiguration = program.obj.toMap.view.mapValues{
+        value => value.numOpt.getOrElse(value.str)
+      }
+      initialConfiguration = initialConfiguration ++ newConfiguration
       ()
     })
     client.subscribeWithResponse(Leader.topic, (topic: String, message: MqttMessage) => {

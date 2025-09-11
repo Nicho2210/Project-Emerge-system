@@ -9,7 +9,7 @@ export class MQTTCommandPublisher implements CommandPublisher {
     this.client = client;
   }
   publishProgramCommand(program: string): void {
-    this.client.publish(`program`, JSON.stringify(program));
+    this.client.publish(`sensing`, JSON.stringify({'program' : program}));
   }
 
   publishMoveCommand(robotId: number, command: MoveCommand): void {
