@@ -1,4 +1,3 @@
-
 import { Joystick } from "react-joystick-component";
 import { useMQTT } from "../mqtt/MQTTStore";
 import type { RobotData } from "../types/RobotData";
@@ -20,16 +19,21 @@ function ControlPanel({ robotId, selectRobot }: ControlPanelProps) {
     const [inputRobotId, setInputRobotId] = useState<number>(0);
 
     let selectedRobot: RobotData | undefined = 
-        robotId == null ? robots.find(robot => robot.id === robotId) : undefined;
+    robotId != null ? robots.find(robot => robot.id === robotId) : undefined;
 
-    //IF the robot is not detected, we can still control it like this
+    // //IF the robot is not detected, we can still control it like this
     let fakeSelected =  robotId != null ? {
       id: robotId, 
       position: {x: 0, y: 0}, 
       isLeader: false, 
       neighbors: [], 
-      orientation: 90
+      orientation: 0
     } : undefined
+
+    // console.log("Selected robot:", selectedRobot);
+    // console.log("Input robot ID:", inputRobotId);
+    // console.log("Robots available:", robots.map(r => r.id));
+    // console.log("Robot ID prop:", robotId);
 
     if(robotId != null && !selectedRobot){
         selectedRobot = fakeSelected
@@ -88,6 +92,7 @@ function ControlPanel({ robotId, selectRobot }: ControlPanelProps) {
                 value={inputRobotId}
                 onChange={e => setInputRobotId(Number(e.target.value))}
                 min={0}
+                max={robots.length - 1}
             />
             <button onClick={() => selectRobot(inputRobotId)}>{selectedRobot && selectedRobot.id == inputRobotId ? "De-select" : "Select"} Robot</button>
             {selectedRobot && (
