@@ -91,7 +91,7 @@ function TopBar({ onResetCamera }: TopBarProps) {
             <input
               className="input-number"
               type="number"
-              step="any"
+              step="0.1"
               value={radius}
               onChange={e => setRadius(Number(e.target.value))}
               style={{ width: "80px", marginRight: "8px" }}
@@ -110,7 +110,7 @@ function TopBar({ onResetCamera }: TopBarProps) {
             <input
               className="input-number"
               type="number"
-              step="any"
+              step="0.1"
               value={radius}
               onChange={e => setRadius(Number(e.target.value))}
               style={{ width: "80px", marginRight: "8px" }}

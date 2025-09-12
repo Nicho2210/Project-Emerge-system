@@ -118,6 +118,7 @@ const FormationPopup: React.FC<FormationPopupProps> = ({
                 type="number"
                 value={params[key]}
                 onChange={e => handleParamChange(key, e.target.value)}
+                step={0.1}
                 style={{ width: "100px", marginLeft: "auto" }} // align input to the right
               />
             </div>
