@@ -2,6 +2,53 @@ import math
 
 import cv2
 import numpy as np
+import time
+
+
+class OneEuroFilter:
+    """One Euro Filter implementation for real-time smoothing with low lag.
+    Reference: Casiez et al. 2012.
+    """
+    def __init__(self, min_cutoff=1.0, beta=0.0, d_cutoff=1.0):
+        self.min_cutoff = float(min_cutoff)
+        self.beta = float(beta)
+        self.d_cutoff = float(d_cutoff)
+        self.x_prev = None
+        self.dx_prev = 0.0
+        self.t_prev = None
+
+    def _alpha(self, dt, cutoff):
+        if cutoff <= 0.0:
+            return 1.0
+        tau = 1.0 / (2.0 * math.pi * cutoff)
+        return 1.0 / (1.0 + tau / dt) if dt > 0 else 1.0
+
+    def __call__(self, x, t=None):
+        if t is None:
+            t = time.time()
+        if self.x_prev is None:
+            # First sample initializes state
+            self.x_prev = x
+            self.t_prev = t
+            return x
+        dt = t - self.t_prev
+        if dt <= 0:
+            dt = 1e-6
+        # Derivative of the signal
+        dx = (x - self.x_prev) / dt
+        # Smooth derivative
+        alpha_d = self._alpha(dt, self.d_cutoff)
+        dx_hat = alpha_d * dx + (1 - alpha_d) * self.dx_prev
+        # Dynamic cutoff
+        cutoff = self.min_cutoff + self.beta * abs(dx_hat)
+        # Smooth signal
+        alpha = self._alpha(dt, cutoff)
+        x_hat = alpha * x + (1 - alpha) * self.x_prev
+        # Update state
+        self.x_prev = x_hat
+        self.dx_prev = dx_hat
+        self.t_prev = t
+        return x_hat
 
 
 class RobotInformation:
@@ -25,7 +72,9 @@ class RobotInformation:
 
 
 class ArUcoRobotPoseEstimator:
-    def __init__(self, camera_matrix, distorsion_coefficients, marker_size=0.05, smooting_history=5):
+    def __init__(self, camera_matrix, distorsion_coefficients, marker_size=0.05, smooting_history=5,
+                 position_min_cutoff=0.5, position_beta=0.01, position_d_cutoff=5.0,
+                 yaw_min_cutoff=0.5, yaw_beta=0.01, yaw_d_cutoff=5.0):
         """
         Initialize the ArUco pose estimator.
 
@@ -47,6 +96,13 @@ class ArUcoRobotPoseEstimator:
         self.pose_histories = {}  # Dictionary with marker_id as key
         self.yaw_histories = {}
         self.max_history = smooting_history
+        # One Euro filter parameter storage
+        self.position_filter_params = (position_min_cutoff, position_beta, position_d_cutoff)
+        self.yaw_filter_params = (yaw_min_cutoff, yaw_beta, yaw_d_cutoff)
+        # Per-marker filters
+        self.position_filters = {}  # marker_id -> [fx, fy, fz]
+        self.yaw_filters = {}       # marker_id -> filter for unwrapped yaw
+        self._yaw_last_unwrapped = {}  # marker_id -> last unwrapped yaw (deg)
 
     def detect_markers(self, frame):
         """
@@ -143,57 +199,53 @@ class ArUcoRobotPoseEstimator:
         """Wrap angle to [-180, 180)."""
         return ((angle + 180.0) % 360.0) - 180.0
 
-    def smooth_yaw(self, marker_id, yaw):
-        """Unwrap and smooth yaw to avoid flicker around +/-180 degrees."""
-        if marker_id not in self.yaw_histories:
-            self.yaw_histories[marker_id] = []
-        history = self.yaw_histories[marker_id]
-
-        if history:
-            # Last unwrapped yaw value
-            prev_unwrapped = history[-1]
-            # Current raw wrapped reading
-            raw_wrapped = self._wrap_angle(yaw)
-            # Equivalent of previous wrapped in [-180,180)
-            prev_wrapped = self._wrap_angle(prev_unwrapped)
-            # Minimal delta in (-180,180]
-            delta = raw_wrapped - prev_wrapped
-            if delta > 180:
-                delta -= 360
-            elif delta < -180:
-                delta += 360
-            # Unwrap current yaw keeping continuity
-            unwrapped = prev_unwrapped + delta
-        else:
-            unwrapped = yaw  # first sample
-
-        history.append(unwrapped)
-        # Trim history
-        self.yaw_histories[marker_id] = history[-self.max_history:]
-
-        # Average unwrapped yaw then wrap back for output
-        mean_unwrapped = float(np.mean(self.yaw_histories[marker_id]))
-        stable_yaw = self._wrap_angle(mean_unwrapped)
-        return stable_yaw
-
-    def smooth_pose(self, marker_id, translation_vector):
+    def smooth_yaw(self, marker_id, yaw, timestamp=None):
+        """One Euro filter based yaw smoothing with angle unwrapping.
+        Steps:
+          1. Unwrap new yaw vs previous to maintain continuity.
+          2. Apply One Euro filter on unwrapped yaw.
+          3. Wrap back to [-180,180) for output.
         """
-        Apply smoothing to pose estimates to reduce noise.
+        if marker_id not in self.yaw_filters:
+            min_c, beta, d_c = self.yaw_filter_params
+            self.yaw_filters[marker_id] = OneEuroFilter(min_cutoff=min_c, beta=beta, d_cutoff=d_c)
+            self._yaw_last_unwrapped[marker_id] = yaw
+            # First sample just returns wrapped yaw
+            return self._wrap_angle(yaw)
+        # Unwrap
+        prev_unwrapped = self._yaw_last_unwrapped[marker_id]
+        raw_wrapped = self._wrap_angle(yaw)
+        prev_wrapped = self._wrap_angle(prev_unwrapped)
+        delta = raw_wrapped - prev_wrapped
+        if delta > 180:
+            delta -= 360
+        elif delta < -180:
+            delta += 360
+        unwrapped = prev_unwrapped + delta
+        # Filter
+        filtered_unwrapped = self.yaw_filters[marker_id](unwrapped, timestamp)
+        self._yaw_last_unwrapped[marker_id] = unwrapped
+        return self._wrap_angle(filtered_unwrapped)
 
-        Args:
-            marker_id: ID of the marker
-            pose: Current pose (translation_vector)
-
-        Returns:
-            Smoothed pose
-        """
-        if(marker_id not in self.pose_histories):
-            self.pose_histories[marker_id] = []
-        translation_history = self.pose_histories[marker_id]
-        translation_history.append(translation_vector)
-        translation_vector = np.mean(translation_history, axis=0)
-        self.pose_histories[marker_id] = self.pose_histories[marker_id][-self.max_history:]
-        return translation_vector
+    def smooth_pose(self, marker_id, translation_vector, timestamp=None):
+        """Apply One Euro filter to translation vector (x,y,z)."""
+        # translation_vector shape (3,1) or (3,) expected
+        vec = translation_vector.reshape(3)
+        if marker_id not in self.position_filters:
+            min_c, beta, d_c = self.position_filter_params
+            self.position_filters[marker_id] = [
+                OneEuroFilter(min_cutoff=min_c, beta=beta, d_cutoff=d_c),
+                OneEuroFilter(min_cutoff=min_c, beta=beta, d_cutoff=d_c),
+                OneEuroFilter(min_cutoff=min_c, beta=beta, d_cutoff=d_c),
+            ]
+        filters = self.position_filters[marker_id]
+        t = timestamp if timestamp is not None else None
+        smoothed = np.array([
+            filters[0](float(vec[0]), t),
+            filters[1](float(vec[1]), t),
+            filters[2](float(vec[2]), t),
+        ], dtype=np.float32).reshape(3, 1)
+        return smoothed
 
     def draw_pose_info(self, frame, corners, ids, poses):
         """
@@ -241,29 +293,22 @@ class ArUcoRobotPoseEstimator:
         """
         corners, ids, _ = self.detect_markers(frame)
         robots = []
-
         if ids is not None and len(ids) > 0:
             poses = self.estimate_pose(corners, ids)
-
+            current_time = time.time()
             for i, (rotation_vector, transition_vector) in enumerate(poses):
-                # Apply smoothing for this specific marker
                 marker_id = ids[i][0]
-                smooth_transition_vector = self.smooth_pose(marker_id, transition_vector)
-
-                # Convert to readable format
+                smooth_transition_vector = self.smooth_pose(marker_id, transition_vector, current_time)
                 x, y, z = smooth_transition_vector[0][0], smooth_transition_vector[1][0], smooth_transition_vector[2][0]
-                # Only compute yaw (Z-axis rotation)
                 yaw = self.rotation_vector_to_yaw(rotation_vector)
-                yaw = self.smooth_yaw(marker_id, yaw)
+                yaw = self.smooth_yaw(marker_id, yaw, current_time)
                 robot_info = RobotInformation(
                     marker_id=marker_id,
                     position={"x": x, "y": y, "z": z},
-                    # Keep structure stable: roll/pitch set to 0 for consumers expecting them
                     rotation={"roll": 0.0, "pitch": 0.0, "yaw": yaw},
                     distance=np.linalg.norm(smooth_transition_vector),
                     rotation_vector=rotation_vector,
                     transition_vector=smooth_transition_vector,
                 )
                 robots.append(robot_info)
-
         return robots
