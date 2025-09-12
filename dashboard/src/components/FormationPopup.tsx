@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import {useMQTT} from "../mqtt/MQTTStore.ts";
 
 export interface FormationType {
   value: string;
@@ -25,7 +26,7 @@ FORMATION_TYPES.forEach(f => {
 interface FormationPopupProps {
   selectedFormation: string;
   setSelectedFormation: (value: string) => void;
-  onConfirm: (params?: Record<string, number>) => void;
+  onConfirm: () => void;
   onCancel: () => void;
 }
 
@@ -35,6 +36,8 @@ const FormationPopup: React.FC<FormationPopupProps> = ({
   onConfirm,
   onCancel
 }) => {
+
+    const { publisher } = useMQTT();
   // Find the selected formation type object
   const formationObj = FORMATION_TYPES.find(f => f.value === selectedFormation);
 
@@ -70,7 +73,11 @@ const FormationPopup: React.FC<FormationPopupProps> = ({
         formationObj.defaultParams[key] = params[key];
       });
     }
-    onConfirm(params);
+    onConfirm();
+    publisher.publishProgramCommand({
+        "program": formationObj?.value,
+        ...formationObj?.defaultParams
+    })
   }
 
   // Reset to original defaults

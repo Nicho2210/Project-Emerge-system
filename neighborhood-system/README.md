@@ -4,9 +4,9 @@ A simple Python webserver that computes robot neighborhoods using MQTT.
 ## Features
 - HTTP endpoint to post neighborhood type
 - Connects to MQTT broker
-- Reads topics: robot/<id>/position
+- Reads topics: robots/<id>/position
 - Computes neighbors for each robot
-- Publishes neighbors to: robot/<id>/neighbors
+- Publishes neighbors to: robots/<id>/neighbors
 
 ## Requirements
 - Python 3.8+

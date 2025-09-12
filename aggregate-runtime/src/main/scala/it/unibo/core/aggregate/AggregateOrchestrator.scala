@@ -35,7 +35,7 @@ class AggregateOrchestrator[Position, Actuation](
     val localSensors = myInfo + (
       LSNS_POSITION -> myPosition
     )
-    val neighboursExports = neighbours
+    val neighboursExports = neighbours.intersect(world.nodes)
       .map(n => n -> exports.getOrElse(n, factory.emptyExport()))
       .toMap + (agent -> exports.getOrElse(agent, factory.emptyExport()))
     val neighboursDistances =
@@ -43,6 +43,7 @@ class AggregateOrchestrator[Position, Actuation](
     val neighboursDistancesVector =
       neighboursPosition
         .map((n, p) => n -> summon[DistanceEstimator[Position]].distanceVector(myPosition, p))
+
     factory.context(
       selfId = agent,
       exports = neighboursExports,

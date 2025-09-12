@@ -7,7 +7,7 @@ interface TopBarProps {
 }
 
 function TopBar({ onResetCamera }: TopBarProps) {
-  const { publisher } = useMQTT();
+
 
   // Neighborhood logic
   const [neighborhoodType, setNeighborhoodType] = useState<string>("FULL");
@@ -43,7 +43,6 @@ function TopBar({ onResetCamera }: TopBarProps) {
   }
 
   function handleFormationUpdate() {
-    publisher.publishProgramCommand(selectedFormation);
     setCurrentFormation(selectedFormation);
     setShowFormationPopup(false);
   }

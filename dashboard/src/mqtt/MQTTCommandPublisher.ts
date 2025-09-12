@@ -8,12 +8,12 @@ export class MQTTCommandPublisher implements CommandPublisher {
   constructor(client: mqtt.MqttClient) {
     this.client = client;
   }
-  publishProgramCommand(program: string): void {
-    this.client.publish(`sensing`, JSON.stringify({'program' : program}));
+  publishProgramCommand(program: object): void {
+    this.client.publish(`sensing`, JSON.stringify(program));
   }
 
   publishMoveCommand(robotId: number, command: MoveCommand): void {
-    this.client.publish(`robot/${robotId}/move`, JSON.stringify({left: command.left, right: command.right}));
+    this.client.publish(`robots/${robotId}/move`, JSON.stringify({left: command.left, right: command.right}));
   }
 
   publishLeaderCommand(robotId: number): void {

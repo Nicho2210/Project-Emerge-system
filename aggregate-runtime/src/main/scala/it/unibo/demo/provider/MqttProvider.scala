@@ -15,10 +15,10 @@ import scala.jdk.CollectionConverters.MapHasAsScala
 object MqttProtocol:
   case class RobotPosition(robot_id: String, x: Double, y: Double, orientation: Double)
   object RobotPosition:
-    val topic: String = "robot/+/position"
+    val topic: String = "robots/+/position"
 
   object Neighborhood:
-    val topic: String = "robot/+/neighbors"
+    val topic: String = "robots/+/neighbors"
 
   object Programs:
     val topic: String = "sensing"
@@ -32,7 +32,11 @@ class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionCo
   private val worldMap: ConcurrentMap[ID, (Position, Info)] = ConcurrentHashMap()
   private val neighborhood: ConcurrentMap[ID, Set[ID]] = ConcurrentHashMap()
   override def provide(): Future[Environment[ID, Position, Info]] = Future:
-    val currentWorld = MqttEnvironment(worldMap.asScala.toMap, neighborhood.asScala.toMap)
+    val newNeighborhood = neighborhood.asScala.toMap
+    val newWorldMap = worldMap.asScala.toMap
+    newNeighborhood.map:
+      case (id, neigh) => neigh.intersect(newWorldMap.keySet)
+    val currentWorld = MqttEnvironment(newWorldMap, newNeighborhood)
     worldMap.clear()
     //neighborhood.clear()
     currentWorld
@@ -55,7 +59,6 @@ class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionCo
     })
     client.subscribeWithResponse(Leader.topic, (topic: String, message: MqttMessage) => {
       val leader = message.toString
-      println(leader)
       initialConfiguration = initialConfiguration.updated("leader", leader.toInt)
       ()
     })

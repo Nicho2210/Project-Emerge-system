@@ -15,8 +15,8 @@ export class MQTTEventStream implements EventStream {
   constructor(client: mqtt.MqttClient) {
     this.client = client;
 
-    this.client.subscribe(`robot/+/position`);
-    this.client.subscribe(`robot/+/neighbors`);
+    this.client.subscribe(`robots/+/position`);
+    this.client.subscribe(`robots/+/neighbors`);
     this.client.subscribe(`leader`);
 
     this.client.on('message', (topic: string, message: Buffer) => {

@@ -71,7 +71,7 @@ def main(debug=False, mqtt_url="localhost", width=640, height=480):
     """
 
     # Initialize camera
-    cap = cv2.VideoCapture(2) # cv2.VideoCapture(4, cv2.CAP_V4L2)  # Use 0 for default camera
+    cap = cv2.VideoCapture(1) # cv2.VideoCapture(4, cv2.CAP_V4L2)  # Use 0 for default camera
     fourcc = cv2.VideoWriter_fourcc(*"MJPG")
     cap.set(cv2.CAP_PROP_FOURCC, fourcc)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
@@ -100,7 +100,7 @@ def main(debug=False, mqtt_url="localhost", width=640, height=480):
     print(f"Connected to MQTT broker at {mqtt_url}")
     print("Press 'q' to quit")
     print("Press 's' to save current pose")
-    mqtt_topic = "robot/"
+    mqtt_topic = "robots/"
     client.loop_start()
     # FPS calculation variables
     fps_counter = 0

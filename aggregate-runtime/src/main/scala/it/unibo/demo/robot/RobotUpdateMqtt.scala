@@ -67,7 +67,7 @@ class RobotUpdateMqtt(angleThreshold: Double)(using ExecutionContext, MqttContex
               Math.pow(targetVector._2 - currentVector._2, 2)
           )
           val targetAngle = math.atan2(targetVector._2, targetVector._1)
-          val deltaAngle = normalizeAngle(targetAngle - currentAngle)
+          val deltaAngle = targetAngle - currentAngle
 
           // If almost aligned, move; else rotate with orientation given by sign of delta
           if (math.abs(deltaAngle) < angleTolerance) then
