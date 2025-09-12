@@ -6,7 +6,7 @@ export interface FormationType {
   defaultParams: Record<string, number>;
 }
 
-export let FORMATION_TYPES: FormationType[] = [
+export const FORMATION_TYPES: FormationType[] = [
   { value: "pointToLeader", label: "Point to Leader", defaultParams: {} },
   { value: "vShape", label: "V Shape", defaultParams: { interDistanceV: 0.4, angleV: -Math.PI / 4, collisionArea: 0.3, stabilityThreshold: 0.1 } },
   { value: "lineShape", label: "Line Shape", defaultParams: { interDistanceLine: 0.4, collisionArea: 0.3, stabilityThreshold: 0.1 } },
@@ -47,7 +47,7 @@ const FormationPopup: React.FC<FormationPopupProps> = ({
       // Only include keys with defined number values
       const filteredParams: Record<string, number> = {};
       Object.entries(formationObj.defaultParams).forEach(([key, value]) => {
-        if (typeof value === "number") filteredParams[key] = value;
+        if (typeof value === "number") { filteredParams[key] = value; }
       });
       setParams(filteredParams);
     } else {
