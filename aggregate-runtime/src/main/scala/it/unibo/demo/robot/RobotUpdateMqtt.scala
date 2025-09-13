@@ -56,21 +56,17 @@ class RobotUpdateMqtt(angleThreshold: Double)(using ExecutionContext, MqttContex
           val orientation = world.sensing(id)("orientation").asInstanceOf[java.lang.Double]
           val currentVector = (-Math.sin(orientation), Math.cos(orientation))
           val currentAngle = math.atan2(currentVector._2, currentVector._1)
-          // Desired translation vector (could imply moving backward if opposite to heading)
-          val desiredVector = (desired._1, desired._2)
-          // Decide whether to move forward or backward based on dot product
-          val dot = currentVector._1 * desiredVector._1 + currentVector._2 * desiredVector._2
-          val moveForward = dot >= 0
           val targetVector = (desired._1, desired._2)
-          val rotationEuclideanDistance = Math.sqrt(
-            Math.pow(targetVector._1 - currentVector._1, 2) +
-              Math.pow(targetVector._2 - currentVector._2, 2)
-          )
           val targetAngle = math.atan2(targetVector._2, targetVector._1)
-          val deltaAngle = targetAngle - currentAngle
 
-          // If almost aligned, move; else rotate with orientation given by sign of delta
-          if (math.abs(deltaAngle) < angleTolerance) then
-            if moveForward then RobotMqttProtocol.forward(id) else RobotMqttProtocol.backward(id)
-          else if deltaAngle > 0 then RobotMqttProtocol.spinLeft(id) else RobotMqttProtocol.spinRight(id)
+          val deltaForward = normalizeAngle(targetAngle - currentAngle)
+          val desiredHeadingForBackward = normalizeAngle(targetAngle - math.Pi)
+          val deltaBackward = normalizeAngle(desiredHeadingForBackward - currentAngle)
+
+          val useForwardPlan = math.abs(deltaForward) <= math.abs(deltaBackward)
+          val chosenDelta = if useForwardPlan then deltaForward else deltaBackward
+
+          if math.abs(chosenDelta) < angleTolerance then
+            if useForwardPlan then RobotMqttProtocol.forward(id) else RobotMqttProtocol.backward(id)
+          else if chosenDelta > 0 then RobotMqttProtocol.spinLeft(id) else RobotMqttProtocol.spinRight(id)
 
