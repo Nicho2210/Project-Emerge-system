@@ -1,128 +1,126 @@
 // import { Canvas } from '@react-three/fiber';
-import { useMemo, useRef, useEffect, useState } from 'react';
-import { Vector3, BufferGeometry, Float32BufferAttribute, LineBasicMaterial, Line as ThreeLine } from 'three';
+import { useRef, useEffect, useReducer } from 'react';
+import { BufferGeometry, Float32BufferAttribute, LineBasicMaterial, Line as ThreeLine } from 'three';
 import type { RobotData } from '../types/RobotData';
 // import { color } from 'three/tsl';
 
-interface ReusableLineProps {
-  points: Vector3[];
-  color?: string;
-}
-
-
-// function NeighborLines({robots} : {robots: RobotData[]}){
-
-//   return <></>;
-// }
-
-class NeighborCouple {
+/** Internal line cache entry */
+interface LineCacheEntry {
+  hash: string;
   robotA: number;
   robotB: number;
-  points: Vector3[];
-
-  constructor(robotA: number, robotB: number, points: Vector3[]) {
-    // Ensure consistent ordering to avoid duplicates
-    if (robotA < robotB) {
-      this.robotA = robotA;
-      this.robotB = robotB;
-    }
-    else {
-      this.robotA = robotB;
-      this.robotB = robotA;
-    }
-    this.points = points;
-  }
-
-  updatePositions(xA: number, yA: number, xB: number, yB: number) {
-    this.points = [
-      new Vector3(xA, 0, yA),
-      new Vector3(xB, 0, yB),
-    ];
-  }
-
-  isPresent(robotId: number): boolean {
-    return this.robotA === robotId || this.robotB === robotId;
-  }
-
-  equals(other: NeighborCouple): boolean {
-    return this.robotA === other.robotA && this.robotB === other.robotB;
-  }
-
-  hashCode(): string {
-    return `${this.robotA}-${this.robotB}`;
-  }
-
+  positions: Float32Array;
+  version: number;
+  visible: boolean;
+  color: string;
 }
 
 function NeighborLines({ robots }: { robots: RobotData[] }) {
-  // Persistent storage for couples
-  const couplesRef = useRef<Map<string, NeighborCouple>>(new Map());
-  const [couples, setCouples] = useState<NeighborCouple[]>([]);
+  // Cache of all line pairs ever seen (persistent for lifetime of component)
+  const lineCacheRef = useRef<Map<string, LineCacheEntry>>(new Map());
+  // Dummy reducer to force re-render when cache updated
+  const [, forceUpdate] = useReducer((x) => x + 1, 0);
 
   useEffect(() => {
-    const currentCouples = couplesRef.current;
-    const seenHashes = new Set<string>();
+    const cache = lineCacheRef.current;
+    // Mark all lines invisible initially (they may be turned back on below)
+    cache.forEach(entry => { entry.visible = false; });
 
-    robots.forEach((r) => 
-      r.neighbors?.forEach((nId) => {
-        const neighbor = robots.find((robot) => robot.id === nId);
-        if (neighbor) {
-          const couple = new NeighborCouple(
-            r.id,
-            nId,
-            [
-              new Vector3(r.position.x, 0, r.position.y),
-              new Vector3(neighbor.position.x, 0, neighbor.position.y),
-            ]
-          );
-          const hash = couple.hashCode();
-          seenHashes.add(hash);
-
-          if (currentCouples.has(hash)) {
-            // Update positions only
-            currentCouples.get(hash)!.updatePositions(
-              r.position.x, r.position.y,
-              neighbor.position.x, neighbor.position.y
-            );
-          } else {
-            // Add new couple
-            currentCouples.set(hash, couple);
-          }
+    for (const robot of robots) {
+      if (!robot.neighbors) continue;
+      for (const nId of robot.neighbors) {
+        const neighbor = robots.find(rb => rb.id === nId);
+        if (!neighbor) continue;
+        const robotA = Math.min(robot.id, nId);
+        const robotB = Math.max(robot.id, nId);
+        const hash = `${robotA}-${robotB}`;
+        let entry = cache.get(hash);
+        if (!entry) {
+          // Create new persistent entry
+            const positions = new Float32Array(6); // two 3D points
+            entry = {
+              hash,
+              robotA: robotA,
+              robotB: robotB,
+              positions,
+              version: 0,
+              visible: true,
+              color: 'green'
+            };
+            cache.set(hash, entry);
         }
-      })
-    );
-
-    // Remove couples that are no longer present
-    for (const hash of Array.from(currentCouples.keys())) {
-      if (!seenHashes.has(hash)) {
-        currentCouples.delete(hash);
+        // Update coordinates in place
+        entry.positions[0] = robot.position.x;
+        entry.positions[1] = 0;
+        entry.positions[2] = robot.position.y;
+        entry.positions[3] = neighbor.position.x;
+        entry.positions[4] = 0;
+        entry.positions[5] = neighbor.position.y;
+        entry.version++;
+        entry.visible = true; // ensure visible
       }
     }
-    setCouples(Array.from(currentCouples.values()));
+
+    // Force a re-render so visibility / updated positions propagate
+    forceUpdate();
   }, [robots]);
 
   return (
     <>
-      {couples.map((couple, _) => (
-        <Line key={couple.hashCode()} points={couple.points} color="green" />
+      {Array.from(lineCacheRef.current.values()).map(entry => (
+        <MemoLine
+          key={entry.hash}
+          positions={entry.positions}
+          version={entry.version}
+          visible={entry.visible}
+          color={entry.color}
+        />
       ))}
     </>
   );
 }
 
-const Line: React.FC<ReusableLineProps> = ({ points, color = 'red' }) => {
-  // Memoize geometry to reuse across renders
-  const geometry = useMemo<BufferGeometry>(() => {
-    const geom = new BufferGeometry();
-    const vertices = new Float32Array(points.flatMap(p => [p.x, p.y, p.z]));
-    geom.setAttribute('position', new Float32BufferAttribute(vertices, 3));
-    return geom;
-  }, [points]);
+interface MemoLineProps {
+  positions: Float32Array; // length 6
+  version: number;
+  visible: boolean;
+  color: string;
+}
 
-  // Memoize material to reuse across renders
-  const material = useMemo<LineBasicMaterial>(() => new LineBasicMaterial({ color }), [color]);
+const MemoLine = ({ positions, version, visible, color }: MemoLineProps) => {
+  const geomRef = useRef<BufferGeometry | null>(null);
+  const lineRef = useRef<ThreeLine | null>(null);
 
-  return <primitive object={new ThreeLine(geometry, material)} />;
+  // Initialize geometry & line once
+  if (!geomRef.current) {
+    const geometry = new BufferGeometry();
+    geometry.setAttribute('position', new Float32BufferAttribute(positions.slice(), 3));
+    geomRef.current = geometry;
+    lineRef.current = new ThreeLine(geometry, new LineBasicMaterial({ color }));
+  }
+
+  // Update positions when version changes
+  useEffect(() => {
+    const geom = geomRef.current;
+    if (!geom) return;
+    const attr = geom.getAttribute('position') as Float32BufferAttribute | undefined;
+    if (attr) {
+      (attr.array as Float32Array).set(positions);
+      attr.needsUpdate = true;
+      geom.computeBoundingSphere();
+    }
+  }, [version, positions]);
+
+  // Update material color if it changes
+  useEffect(() => {
+    if (lineRef.current) {
+      const mat = lineRef.current.material as LineBasicMaterial;
+      if (mat.color.getStyle() !== color) mat.color.set(color);
+    }
+  }, [color]);
+
+  if (!lineRef.current) return null;
+  return <primitive object={lineRef.current} visible={visible} />;
 };
 
 export default NeighborLines;
