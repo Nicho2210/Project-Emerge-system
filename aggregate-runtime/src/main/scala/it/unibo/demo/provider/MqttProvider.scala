@@ -48,7 +48,16 @@ class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionCo
     client.connect()
     client.subscribeWithResponse(RobotPosition.topic, (topic: String, message: MqttMessage) => {
       val robot = read[MqttProtocol.RobotPosition](message.getPayload)
-      worldMap.put(robot.robot_id.toInt, ((robot.x, robot.y), initialConfiguration ++ Map("orientation" -> robot.orientation)))
+      val robotId = robot.robot_id.toInt
+      val newPosition = (robot.x, robot.y)
+      val newInfo = Map("orientation" -> robot.orientation)
+      worldMap.compute(robotId, (id, currentData) => {
+        val updatedInfo = Option(currentData) match {
+          case Some((_, existingInfo)) => existingInfo ++ newInfo
+          case None => newInfo
+        }
+        (newPosition, updatedInfo)
+      })
       ()
     })
     client.subscribeWithResponse(Programs.topic, (topic: String, message: MqttMessage) => {
@@ -69,5 +78,16 @@ class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionCo
       val extractId = topic.split("/")(1).toInt
       val robotNeighborhood = read[List[String]](message.getPayload).map(_.toInt).toSet + extractId
       neighborhood.put(extractId, read[List[String]](message.getPayload).map(_.toInt).toSet)
+      ()
+    })
+    client.subscribeWithResponse(Emulated.topic, (topic: String, message: MqttMessage) => {
+      val extractId = topic.split("/")(1).toInt
+      val newInfo = Map("isEmulated" -> true)
+      worldMap.computeIfPresent(extractId, (id, currentData) => {
+        val position = currentData._1
+        val existingInfo = currentData._2
+        val updatedInfo = existingInfo ++ newInfo
+        (position, updatedInfo)
+      })
       ()
     })
