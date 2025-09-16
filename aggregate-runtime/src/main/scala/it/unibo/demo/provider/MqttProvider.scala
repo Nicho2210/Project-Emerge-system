@@ -48,16 +48,7 @@ class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionCo
     client.connect()
     client.subscribeWithResponse(RobotPosition.topic, (topic: String, message: MqttMessage) => {
       val robot = read[MqttProtocol.RobotPosition](message.getPayload)
-      val robotId = robot.robot_id.toInt
-      val newPosition = (robot.x, robot.y)
-      val newInfo = Map("orientation" -> robot.orientation)
-      worldMap.compute(robotId, (id, currentData) => {
-        val updatedInfo = Option(currentData) match {
-          case Some((_, existingInfo)) => existingInfo ++ newInfo
-          case None => newInfo
-        }
-        (newPosition, updatedInfo)
-      })
+      worldMap.put(robot.robot_id.toInt, ((robot.x, robot.y), initialConfiguration ++ Map("orientation" -> robot.orientation)))
       ()
     })
     client.subscribeWithResponse(Programs.topic, (topic: String, message: MqttMessage) => {
