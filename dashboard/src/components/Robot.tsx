@@ -8,6 +8,7 @@ import { useGLTF } from '@react-three/drei';
 const leaderMaterial = new THREE.MeshStandardMaterial({ color: 'gold' })
 const baseMaterial = new THREE.MeshStandardMaterial({ color: 'grey' })
 const selectedMaterial = new THREE.MeshStandardMaterial({ color: 'skyblue' })
+const emulatedMaterial = new THREE.MeshStandardMaterial({ color: 'red' })
 
 
 
