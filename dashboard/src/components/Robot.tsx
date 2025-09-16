@@ -45,15 +45,15 @@ function Robot({ robot, selected, onClick } : RobotProps) {
       >
       <mesh
           geometry={nodes.robot_1.geometry}
-          material={robot.isLeader ? leaderMaterial : selected ? selectedMaterial : baseMaterial}
+          material={robot.isLeader ? leaderMaterial : selected ? selectedMaterial : robot.isEmulated ? emulatedMaterial : baseMaterial}
         />
        <mesh
           geometry={nodes.robot_2.geometry}
-          material={robot.isLeader ? leaderMaterial : selected ? selectedMaterial : baseMaterial}
+          material={robot.isLeader ? leaderMaterial : selected ? selectedMaterial : robot.isEmulated ? emulatedMaterial : baseMaterial}
         />
          <mesh
           geometry={nodes.robot.geometry}
-          material={robot.isLeader ? leaderMaterial : selected ? selectedMaterial : baseMaterial}
+          material={robot.isLeader ? leaderMaterial : selected ? selectedMaterial : robot.isEmulated ? emulatedMaterial : baseMaterial}
         />
     </group>
     // </Select>
