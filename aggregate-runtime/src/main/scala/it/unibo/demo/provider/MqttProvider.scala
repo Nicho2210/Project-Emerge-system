@@ -2,7 +2,7 @@ package it.unibo.demo.provider
 
 import it.unibo.core.{Environment, EnvironmentProvider}
 import it.unibo.demo.environment.MqttEnvironment
-import it.unibo.demo.provider.MqttProtocol.{Leader, Neighborhood, Programs, RobotPosition}
+import it.unibo.demo.provider.MqttProtocol.{Leader, Neighborhood, Programs, RobotPosition, Emulated}
 import it.unibo.demo.{ID, Info, Position}
 import it.unibo.mqtt.MqttContext
 import org.eclipse.paho.client.mqttv3.*
@@ -25,6 +25,9 @@ object MqttProtocol:
 
   object Leader:
     val topic: String = "leader"
+
+  object Emulated:
+    val topic: String = "robots/+/emulated"
 
   given RW[RobotPosition] = macroRW
 
