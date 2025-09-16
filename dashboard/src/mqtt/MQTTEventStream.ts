@@ -17,6 +17,7 @@ export class MQTTEventStream implements EventStream {
 
     this.client.subscribe(`robots/+/position`);
     this.client.subscribe(`robots/+/neighbors`);
+    this.client.subscribe(`robots/+/emulated`);
     this.client.subscribe(`leader`);
 
     this.client.on('message', (topic: string, message: Buffer) => {
@@ -52,7 +53,14 @@ export class MQTTEventStream implements EventStream {
               neighbors: data,
             };
           }
-        } 
+        } else if (topic.endsWith('/emulated')) {
+          if(this.robots[id]) {
+            this.robots[id] = {
+              ...this.robots[id],
+              isEmulated: true,
+            };
+          }
+        }
       } catch (e) {
         console.error('Error processing MQTT message:', e);
       }
