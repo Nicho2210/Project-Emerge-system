@@ -40,7 +40,22 @@ abstract class ShapeFormation() extends BaseDemo:
     // convert the orientation to a 2d vector
     val (orientationLeaderX, orientationLeaderY) = (-math.sin(leaderOrientation), math.cos(leaderOrientation))
     // Aggregate repulsion from all neighbors within collisionRange (inverse-square weighting)
-    val repulsionSum = neighborMap.values
+    val repulsionSum = computeRepulsionSum(neighborMap, collisionArea)
+    val avoidance = if repulsionSum.magnitude > maxRepulsion then repulsionSum.normalize * maxRepulsion else repulsionSum
+
+    val resultingVector = ((Point3D(local._1, local._2, 0))  + avoidance).normalize
+    val res =
+      if distanceTowardGoal < stabilityThreshold then
+        if leader then NoOp else computeGoalConsideringAvoidance((orientationLeaderX, orientationLeaderY), avoidance)
+      else
+        Forward((resultingVector.x, resultingVector.y))
+    res
+
+  protected def orderedNodes(nodes: Set[(Int, (Double, Double))]): List[(Int, (Double, Double))] =
+    nodes.filter(_._1 != mid()).toList.sortBy(_._1)
+
+  private def computeRepulsionSum(neighborMap: Map[Int, Point3D], collisionArea: Double): Point3D =
+    neighborMap.values
       .map { p =>
         val d = p.magnitude
         if d < 1e-9 || d >= collisionArea then Point3D.Zero
@@ -51,20 +66,13 @@ abstract class ShapeFormation() extends BaseDemo:
       }
       .foldLeft(Point3D.Zero)(_ + _)
 
-    val avoidance = if repulsionSum.magnitude > maxRepulsion then repulsionSum.normalize * maxRepulsion else repulsionSum
+  private def computeGoalConsideringAvoidance(leaderOrientation: (Double, Double), avoidance: Point3D): Actuation =
+    if avoidance.magnitude > 0.01 then
+      val combinedVector = (Point3D(leaderOrientation._1, leaderOrientation._2, 0) + avoidance).normalize
+      Forward((combinedVector.x, combinedVector.y))
+    else
+      Rotation(leaderOrientation._1, leaderOrientation._2)
 
-    val resultingVector = ((Point3D(local._1, local._2, 0))  + avoidance).normalize
-    val res =
-      if distanceTowardGoal < stabilityThreshold then {
-        if leader then NoOp
-        else Rotation(orientationLeaderX, orientationLeaderY)
-      } else {
-        Forward((resultingVector.x, resultingVector.y))
-      }
-    res
-
-  protected def orderedNodes(nodes: Set[(Int, (Double, Double))]): List[(Int, (Double, Double))] =
-    nodes.filter(_._1 != mid()).toList.sortBy(_._1)
 
   def calculateSuggestion(ordered: List[(Int, (Double, Double))]): Map[Int, (Double, Double)]
 

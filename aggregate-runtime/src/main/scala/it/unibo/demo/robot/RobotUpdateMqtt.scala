@@ -18,12 +18,36 @@ class RobotUpdateMqtt(angleThreshold: Double)(using ExecutionContext, MqttContex
 
   // Small angular tolerance to avoid oscillations when almost aligned (in radians)
   private val angleTolerance = angleThreshold * math.Pi / 180.0 // 5 degrees
+  
+  // Control parameters for smooth movement
+  private val maxSpeed = 0.9
+  private val rotationGain = 0.8 // How aggressively to correct angular error
+  private val minSpeed = 0.2 // Minimum speed to maintain forward momentum
 
   private def normalizeAngle(a: Double): Double =
     var x = a
     while x <= -math.Pi do x += 2 * math.Pi
     while x > math.Pi do x -= 2 * math.Pi
     x
+
+  // Calculate differential wheel speeds for simultaneous rotation and translation
+  private def calculateWheelSpeeds(baseSpeed: Double, angularError: Double, moveForward: Boolean): (Double, Double) =
+    val direction = if moveForward then 1.0 else -1.0
+    val rotationCorrection = angularError * rotationGain
+    
+    // Base speeds for both wheels
+    val leftBase = baseSpeed * direction
+    val rightBase = baseSpeed * direction
+    
+    // Apply rotation correction (positive angularError means turn left)
+    val leftSpeed = leftBase - rotationCorrection
+    val rightSpeed = rightBase + rotationCorrection
+    
+    // Ensure we maintain minimum forward momentum unless angular error is large
+    val absAngularError = math.abs(angularError)
+    val speedScale = if absAngularError > math.Pi / 3 then 0.3 else 1.0 // Slow down for large turns
+    
+    (leftSpeed * speedScale, rightSpeed * speedScale)
 
   override def update(world: Environment[ID, Position, Info], id: ID, actuation: Actuation): Future[Unit] =
     actuation match
@@ -66,7 +90,13 @@ class RobotUpdateMqtt(angleThreshold: Double)(using ExecutionContext, MqttContex
           val useForwardPlan = math.abs(deltaForward) <= math.abs(deltaBackward)
           val chosenDelta = if useForwardPlan then deltaForward else deltaBackward
 
+          // Smart control: combine rotation and translation
           if math.abs(chosenDelta) < angleTolerance then
+            // Almost aligned, just move straight
             if useForwardPlan then RobotMqttProtocol.forward(id) else RobotMqttProtocol.backward(id)
-          else if chosenDelta > 0 then RobotMqttProtocol.spinLeft(id) else RobotMqttProtocol.spinRight(id)
+          else
+            // Need to rotate while moving - use differential steering
+            val baseSpeed = if math.abs(chosenDelta) > math.Pi / 2 then minSpeed else maxSpeed
+            val (leftSpeed, rightSpeed) = calculateWheelSpeeds(baseSpeed, chosenDelta, useForwardPlan)
+            RobotMqttProtocol.moveWith(id, leftSpeed, rightSpeed)
 

@@ -24,4 +24,6 @@ object RobotMqttProtocol:
   def backward(robot: Int)(using mqttContext: MqttContext): Unit =
     mqttContext.client.publish(s"robots/${robot}/move", write(RobotMovement(-forwardSpeed, -forwardSpeed)).getBytes, 0, false)
 
+  def moveWith(robot: Int, left: Double, right: Double)(using mqttContext: MqttContext): Unit =
+    mqttContext.client.publish(s"robots/${robot}/move", write(RobotMovement(left, right)).getBytes, 0, false)
 
