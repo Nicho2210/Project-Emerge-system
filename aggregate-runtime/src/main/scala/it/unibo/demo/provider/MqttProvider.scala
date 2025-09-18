@@ -17,6 +17,9 @@ object MqttProtocol:
   object RobotPosition:
     val topic: String = "robots/+/position"
 
+  object ObstaclePosition:
+    val topic: String = "obstacles/+/position"
+
   object Neighborhood:
     val topic: String = "robots/+/neighbors"
 
