@@ -7,10 +7,12 @@ import mqtt from 'mqtt'
 
 // Extend the MQTTStore type to include robots
 import type { RobotData } from '../types/RobotData';
+import { ObstacleData } from '../types/ObstacleData'
 
 type MQTTStore = {
   publisher: CommandPublisher;
   robots: RobotData[];
+  obstacles: ObstacleData[];
 };
 
 const MQTT_BROKER_URL = import.meta.env.VITE_MQTT_BROKER_URL || 'ws://localhost:9001'
@@ -22,13 +24,15 @@ export const useMQTT = create<MQTTStore>()((set) => {
 
   // Initialize robots as an empty array
   const robots: RobotData[] = [];
+  const obstacles: ObstacleData[] = [];
 
-  eventStream.subscribe((updatedRobots) => {
-    set({ robots: updatedRobots });
+  eventStream.subscribe((updatedRobots, updatedObstacles) => {
+    set({ robots: updatedRobots, obstacles: updatedObstacles });
   });
 
   return {
     publisher,
     robots,
+    obstacles,
   };
 });
