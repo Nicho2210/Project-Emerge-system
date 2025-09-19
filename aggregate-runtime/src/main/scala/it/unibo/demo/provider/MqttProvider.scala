@@ -3,7 +3,7 @@ package it.unibo.demo.provider
 import it.unibo.core.{Environment, EnvironmentProvider}
 import it.unibo.demo.environment.MqttEnvironment
 import it.unibo.demo.provider.MqttProtocol.{Leader, Neighborhood, Programs, RobotPosition, Emulated, ObstaclePosition}
-import it.unibo.demo.{ID, Info, Position, ObstacleSize}
+import it.unibo.demo.{ID, Info, Position}
 import it.unibo.mqtt.MqttContext
 import org.eclipse.paho.client.mqttv3.*
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
@@ -40,7 +40,7 @@ object MqttProtocol:
 class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionContext, MqttContext) extends EnvironmentProvider[ID, Position, Info, Environment[ID, Position, Info]]:
   private val worldMap: ConcurrentMap[ID, (Position, Info)] = ConcurrentHashMap()
   private val neighborhood: ConcurrentMap[ID, Set[ID]] = ConcurrentHashMap()
-  private val obstacles: ConcurrentHashMap[ID, (Position, ObstacleSize)] = ConcurrentHashMap()
+  private val obstacles: ConcurrentHashMap[ID, (Position, Double)] = ConcurrentHashMap()
   override def provide(): Future[Environment[ID, Position, Info]] = Future:
     val newNeighborhood = neighborhood.asScala.toMap
     val newWorldMap = worldMap.asScala.toMap

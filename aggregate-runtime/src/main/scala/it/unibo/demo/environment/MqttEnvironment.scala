@@ -1,7 +1,7 @@
 package it.unibo.demo.environment
 
 import it.unibo.core.Environment
-import it.unibo.demo.{ID, Info, ObstacleSize}
+import it.unibo.demo.{ID, Info}
 import it.unibo.utils.Position.{Position, given}
 
 /**
@@ -10,7 +10,7 @@ import it.unibo.utils.Position.{Position, given}
  * @param data A map of node IDs to their positions and information.
  * @param neighboursRadius The radius within which nodes are considered neighbors.
  */
-class MqttEnvironment(data: Map[ID, (Position, Info)], private val neighbours: Map[ID, Set[ID]], val obstacles: Map[ID, (Position, ObstacleSize)])
+class MqttEnvironment(data: Map[ID, (Position, Info)], private val neighbours: Map[ID, Set[ID]], val obstacles: Map[ID, (Position, Double)])
     extends Environment[ID, Position, Info]:
 
   override def nodes: Set[ID] = data.keySet
