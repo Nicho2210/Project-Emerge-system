@@ -2,8 +2,6 @@ import { Canvas, /*invalidate*/ } from "@react-three/fiber";
 import Ground from "./Ground";
 import { useMQTT } from "../mqtt/MQTTStore";
 import ResettableCamera from "./ResettableCamera";
-import { useState, useEffect } from 'react';
-import { ObstacleData } from '../types/ObstacleData';
 import Obstacle from './Obstacle';
 
 // import { Selection, Select, EffectComposer, Outline } from "@react-three/postprocessing";
@@ -20,9 +18,7 @@ interface RobotSceneProps {
 
 function RobotScene({ onRobotClick, cameraTrigger, selectedRobotId }: RobotSceneProps) {
 
-    const { robots } = useMQTT();
-
-    const [obstacles, setObstacles] = useState<ObstacleData[]>([]);
+    const { robots, obstacles } = useMQTT();
 
     // useEffect(() => {
     //     console.log("Robots updated:", robots);
