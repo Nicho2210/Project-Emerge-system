@@ -2,8 +2,8 @@ package it.unibo.demo.provider
 
 import it.unibo.core.{Environment, EnvironmentProvider}
 import it.unibo.demo.environment.MqttEnvironment
-import it.unibo.demo.provider.MqttProtocol.{Leader, Neighborhood, Programs, RobotPosition, Emulated}
-import it.unibo.demo.{ID, Info, Position}
+import it.unibo.demo.provider.MqttProtocol.{Leader, Neighborhood, Programs, RobotPosition, Emulated, ObstaclePosition}
+import it.unibo.demo.{ID, Info, Position, ObstacleSize}
 import it.unibo.mqtt.MqttContext
 import org.eclipse.paho.client.mqttv3.*
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
@@ -13,6 +13,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 object MqttProtocol:
+
+  case class Obstacle(id: String, x: Double, y: Double, size: Double)
   case class RobotPosition(robot_id: String, x: Double, y: Double, orientation: Double)
   object RobotPosition:
     val topic: String = "robots/+/position"
@@ -33,16 +35,19 @@ object MqttProtocol:
     val topic: String = "robots/+/emulated"
 
   given RW[RobotPosition] = macroRW
+  given RW[Obstacle] = macroRW
 
 class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionContext, MqttContext) extends EnvironmentProvider[ID, Position, Info, Environment[ID, Position, Info]]:
   private val worldMap: ConcurrentMap[ID, (Position, Info)] = ConcurrentHashMap()
   private val neighborhood: ConcurrentMap[ID, Set[ID]] = ConcurrentHashMap()
+  private val obstacles: ConcurrentHashMap[ID, (Position, ObstacleSize)] = ConcurrentHashMap()
   override def provide(): Future[Environment[ID, Position, Info]] = Future:
     val newNeighborhood = neighborhood.asScala.toMap
     val newWorldMap = worldMap.asScala.toMap
+    val newObstacles = obstacles.asScala.toMap
     newNeighborhood.map:
       case (id, neigh) => neigh.intersect(newWorldMap.keySet)
-    val currentWorld = MqttEnvironment(newWorldMap, newNeighborhood)
+    val currentWorld = MqttEnvironment(newWorldMap, newNeighborhood, newObstacles)
     worldMap.clear()
     //neighborhood.clear()
     currentWorld
@@ -85,3 +90,8 @@ class MqttProvider(var initialConfiguration: Map[String, Any])(using ExecutionCo
       })
       ()
     })
+    client.subscribeWithResponse(ObstaclePosition.topic, (topic: String, message: MqttMessage) => {
+        val obstacle = read[MqttProtocol.Obstacle](message.getPayload)
+        obstacles.put(obstacle.id.toInt, ((obstacle.x, obstacle.y), obstacle.size))
+        ()
+      })
