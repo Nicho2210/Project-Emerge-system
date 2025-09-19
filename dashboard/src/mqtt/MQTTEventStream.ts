@@ -26,6 +26,7 @@ export class MQTTEventStream implements EventStream {
     this.client.on('message', (topic: string, message: Buffer) => {
       try {
         const data = JSON.parse(message.toString());
+        const id = topic.split('/')[1];
         if(topic === 'leader') {
           Object.values(this.robots).forEach(element => {
             element.isLeader = false;
@@ -36,9 +37,7 @@ export class MQTTEventStream implements EventStream {
               isLeader: true,
             };
           }
-        }
-        const id = topic.split('/')[1];
-        if (topic.startsWith('robots/')) {
+        } else if (topic.startsWith('robots/')) {
           if (topic.endsWith('/position')) {
             // reset the timer for each robot position update
             if (this.robotTimers[parseInt(id, 10)]) {
@@ -67,7 +66,7 @@ export class MQTTEventStream implements EventStream {
           }
         } else if (topic.startsWith('obstacles/')) {
           if (topic.endsWith('/position')) {
-            const id = topic.split('/')[1];
+            console.log(`[MQTT Debug] Dati ostacolo:`, data);
             this.obstacles[id] = {
               id: parseInt(id, 10),
               position: { x: data.x, y: data.y },
