@@ -25,7 +25,6 @@ export class MQTTEventStream implements EventStream {
 
     this.client.on('message', (topic: string, message: Buffer) => {
       try {
-        console.log(topic)
         const data = JSON.parse(message.toString());
         const id = topic.split('/')[1];
         if(topic === 'leader') {
@@ -67,7 +66,6 @@ export class MQTTEventStream implements EventStream {
           }
         } else if (topic.startsWith('obstacles/')) {
           if (topic.endsWith('/position')) {
-            console.log(`[MQTT Debug] Dati ostacolo:`, data);
             this.obstacles[id] = {
               id: parseInt(id, 10),
               position: { x: data.x, y: data.y },
