@@ -27,7 +27,8 @@ function ControlPanel({ robotId, selectRobot }: ControlPanelProps) {
       position: {x: 0, y: 0}, 
       isLeader: false, 
       neighbors: [], 
-      orientation: 0
+      orientation: 0,
+      isEmulated: false,
     } : undefined
     
     if(robotId !== null && !selectedRobot){
