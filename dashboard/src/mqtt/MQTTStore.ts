@@ -7,7 +7,7 @@ import mqtt from 'mqtt'
 
 // Extend the MQTTStore type to include robots
 import type { RobotData } from '../types/RobotData';
-import { ObstacleData } from '../types/ObstacleData'
+import type { ObstacleData } from '../types/ObstacleData'
 
 type MQTTStore = {
   publisher: CommandPublisher;
