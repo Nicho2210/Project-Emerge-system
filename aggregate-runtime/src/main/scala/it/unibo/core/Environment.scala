@@ -12,3 +12,4 @@ trait Environment[ID, Position, Info]:
   def position(id: ID): Position
   def sensing(id: ID): Info
   def neighbors(id: ID): Set[ID]
+  def obstacles: Map[ID, (Position, Double)]
