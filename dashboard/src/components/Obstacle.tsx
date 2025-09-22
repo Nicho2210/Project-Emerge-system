@@ -15,7 +15,7 @@ function Obstacle({ obstacle }: ObstacleProps) {
   return (
     <mesh
           receiveShadow
-          position={[position.x, 0.017, position.y]}
+          position={[position.x, size / 2, position.y]}
           ref={meshRef}
           material={greenMaterial}
         >
