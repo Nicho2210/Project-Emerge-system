@@ -33,7 +33,8 @@ class AggregateOrchestrator[Position, Actuation](
     val myInfo = world.sensing(agent)
 
     val localSensors = myInfo + (
-      LSNS_POSITION -> myPosition
+      LSNS_POSITION -> myPosition,
+      "obstacles" -> world.obstacles
     )
     val neighboursExports = neighbours.intersect(world.nodes)
       .map(n => n -> exports.getOrElse(n, factory.emptyExport()))
