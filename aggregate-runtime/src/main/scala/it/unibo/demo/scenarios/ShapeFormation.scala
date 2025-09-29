@@ -8,6 +8,11 @@ abstract class ShapeFormation() extends BaseDemo:
   private val repulsionStrength = 0.6
   private val maxRepulsion = 2
 
+  // obstacles
+  private val obstaclesSenseName = "obstacles"
+  private val obstacleRepulsionFactor = 1.5
+  private val obstacleAvoidanceRange = 0.8
+
   extension(p: Point3D)
     def magnitude: Double = p.distance(Point3D.Zero)
     def normalize: Point3D =
