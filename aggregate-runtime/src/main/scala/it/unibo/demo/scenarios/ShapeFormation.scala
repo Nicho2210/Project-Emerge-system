@@ -10,8 +10,8 @@ abstract class ShapeFormation() extends BaseDemo:
 
   // obstacles
   private val obstaclesSenseName = "obstacles"
-  private val obstacleRepulsionFactor = 1.5
-  private val obstacleAvoidanceRange = 0.8
+  private val obstacleRepulsionFactor = 0.6
+  private val obstacleAvoidanceRange = 0.2
 
   extension(p: Point3D)
     def magnitude: Double = p.distance(Point3D.Zero)
@@ -46,14 +46,21 @@ abstract class ShapeFormation() extends BaseDemo:
     val (orientationLeaderX, orientationLeaderY) = (-math.sin(leaderOrientation), math.cos(leaderOrientation))
     // Aggregate repulsion from all neighbors within collisionRange (inverse-square weighting)
     val repulsionSum = computeRepulsionSum(neighborMap, collisionArea)
-    val avoidance = if repulsionSum.magnitude > maxRepulsion then repulsionSum.normalize * maxRepulsion else repulsionSum
+    val avoidanceRobots  = if repulsionSum.magnitude > maxRepulsion then repulsionSum.normalize * maxRepulsion else repulsionSum
 
-    val resultingVector = ((Point3D(local._1, local._2, 0))  + avoidance).normalize
+    val myPosition = sense[(Double, Double)](LSNS_POSITION)
+    val avoidanceObstacles = computeObstacleRepulsion(myPosition)
+
+    val combinedAvoidance = avoidanceRobots + avoidanceObstacles
+    val resultingVector = ((Point3D(local._1, local._2, 0)) + combinedAvoidance).normalize
+
     val res =
       if distanceTowardGoal < stabilityThreshold then
-        if leader then NoOp else computeGoalConsideringAvoidance((orientationLeaderX, orientationLeaderY), avoidance)
-      else
-        Forward((resultingVector.x, resultingVector.y))
+        if leader then
+          NoOp
+        else
+          computeGoalConsideringAvoidance((orientationLeaderX, orientationLeaderY), combinedAvoidance)
+      else Forward((resultingVector.x, resultingVector.y))
     res
 
   protected def orderedNodes(nodes: Set[(Int, (Double, Double))]): List[(Int, (Double, Double))] =
@@ -72,7 +79,7 @@ abstract class ShapeFormation() extends BaseDemo:
           Point3D.Zero
         else
           val proximity  = math.max(0.0, 1.0 - (d -safeRadius) / (obstacleAvoidanceRange - safeRadius))
-          val weight = obstacleRepulsionFactor * proximity / (d * d) 
+          val weight = obstacleRepulsionFactor * proximity / (d * d)
           (vectorToObstacle.normalize * weight) * -1.0
       }.foldLeft(Point3D.Zero)(_ + _)
 
