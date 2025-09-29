@@ -59,6 +59,23 @@ abstract class ShapeFormation() extends BaseDemo:
   protected def orderedNodes(nodes: Set[(Int, (Double, Double))]): List[(Int, (Double, Double))] =
     nodes.filter(_._1 != mid()).toList.sortBy(_._1)
 
+  private def computeObstacleRepulsion(myPosition: (Double, Double)): Point3D =
+    val allObstacles = sense[Map[Int, ((Double, Double), Double)]](obstaclesSenseName)
+    allObstacles.values
+      .map {case (pos, size) =>
+        val obstacleCenter = Point3D(pos._1, pos._2, 0)
+        val myCenter = Point3D(myPosition._1, myPosition._2, 0)
+        val vectorToObstacle = obstacleCenter - myCenter
+        val d = vectorToObstacle.magnitude
+        val safeRadius = size / 2 + 0.08
+        if d >= obstacleAvoidanceRange || d < safeRadius then
+          Point3D.Zero
+        else
+          val proximity  = math.max(0.0, 1.0 - (d -safeRadius) / (obstacleAvoidanceRange - safeRadius))
+          val weight = obstacleRepulsionFactor * proximity / (d * d) 
+          (vectorToObstacle.normalize * weight) * -1.0
+      }.foldLeft(Point3D.Zero)(_ + _)
+
   private def computeRepulsionSum(neighborMap: Map[Int, Point3D], collisionArea: Double): Point3D =
     neighborMap.values
       .map { p =>
