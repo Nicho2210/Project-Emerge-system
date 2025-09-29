@@ -11,7 +11,7 @@ abstract class ShapeFormation() extends BaseDemo:
   // obstacles
   private val obstaclesSenseName = "obstacles"
   private val obstacleRepulsionFactor = 0.6
-  private val obstacleAvoidanceRange = 0.2
+  private val obstacleAvoidanceRange = 0.1
 
   extension(p: Point3D)
     def magnitude: Double = p.distance(Point3D.Zero)
@@ -25,6 +25,8 @@ abstract class ShapeFormation() extends BaseDemo:
     }
 
   def logic(): Actuation =
+    val myPosition = sense[(Double, Double)](LSNS_POSITION)
+    val allObstacles = sense[Map[Int, ((Double, Double), Double)]](obstaclesSenseName)
     val leaderSelected = sense[Int]("leader")
     val stabilityThreshold = sense[Double]("stabilityThreshold")
     val collisionArea = sense[Double]("collisionArea")
@@ -39,7 +41,31 @@ abstract class ShapeFormation() extends BaseDemo:
     val ordered = orderedNodes(collectInfo.toSet)
     val suggestion = branch(leaderSelected == mid())(calculateSuggestion(ordered))(Map.empty)
     val local = gradientCast(leader, suggestion, a => a).getOrElse(mid, (0.0, 0.0))
-    val distanceTowardGoal = Math.sqrt(local._1 * local._1 + local._2 * local._2)
+
+    val absoluteTargetPosition = (myPosition._1 + local._1, myPosition._2 + local._2)
+
+    val blockingObstacleOption = allObstacles.values.find {
+      case (obstaclePos, obstacleSize) =>
+        val distance = module((absoluteTargetPosition._1 - obstaclePos._1, absoluteTargetPosition._2 - obstaclePos._2))
+        distance * 2 < obstacleSize
+    }
+
+    val newTarget =
+      blockingObstacleOption match {
+        case Some((obstaclePos, obstacleSize)) =>
+          val obstacleCenter = Point3D(obstaclePos._1, obstaclePos._2, 0)
+          val originalTarget = Point3D(absoluteTargetPosition._1, absoluteTargetPosition._2, 0)
+          val vectorOtoT = originalTarget - obstacleCenter
+          val safeDistance = obstacleSize / 2.0 + obstacleAvoidanceRange
+          val newAbsoluteTarget = obstacleCenter + (vectorOtoT.normalize * safeDistance)
+          val attractiveX = newAbsoluteTarget.x - myPosition._1
+          val attractiveY = newAbsoluteTarget.y - myPosition._2
+          (attractiveX + 0.1, attractiveY + 0.1)
+        case None =>
+          local
+      }
+
+    val distanceTowardGoal = Math.sqrt(newTarget._1 * newTarget._1 + newTarget._2 * newTarget._2)
     val neighborMap = foldhoodPlus[Map[Int, (Double, Double)]](Map.empty)((a, b) => a ++ b)(Map(nbr(mid) -> distanceVector))
       .map { (id, nbrVector) => id -> Point3D(nbrVector._1, nbrVector._2, 0.0) }
     // convert the orientation to a 2d vector
@@ -48,11 +74,10 @@ abstract class ShapeFormation() extends BaseDemo:
     val repulsionSum = computeRepulsionSum(neighborMap, collisionArea)
     val avoidanceRobots  = if repulsionSum.magnitude > maxRepulsion then repulsionSum.normalize * maxRepulsion else repulsionSum
 
-    val myPosition = sense[(Double, Double)](LSNS_POSITION)
     val avoidanceObstacles = computeObstacleRepulsion(myPosition)
 
     val combinedAvoidance = avoidanceRobots + avoidanceObstacles
-    val resultingVector = ((Point3D(local._1, local._2, 0)) + combinedAvoidance).normalize
+    val resultingVector = ((Point3D(newTarget._1, newTarget._2, 0)) + combinedAvoidance).normalize
 
     val res =
       if distanceTowardGoal < stabilityThreshold then
@@ -69,19 +94,25 @@ abstract class ShapeFormation() extends BaseDemo:
   private def computeObstacleRepulsion(myPosition: (Double, Double)): Point3D =
     val allObstacles = sense[Map[Int, ((Double, Double), Double)]](obstaclesSenseName)
     allObstacles.values
-      .map {case (pos, size) =>
+      .map {case (pos, diameter) =>
         val obstacleCenter = Point3D(pos._1, pos._2, 0)
         val myCenter = Point3D(myPosition._1, myPosition._2, 0)
         val vectorToObstacle = obstacleCenter - myCenter
         val d = vectorToObstacle.magnitude
-        val safeRadius = size / 2 + 0.08
-        if d >= obstacleAvoidanceRange || d < safeRadius then
+        val radius = diameter / 2
+        if d >= diameter + obstacleAvoidanceRange then
           Point3D.Zero
         else
-          val proximity  = math.max(0.0, 1.0 - (d -safeRadius) / (obstacleAvoidanceRange - safeRadius))
-          val weight = obstacleRepulsionFactor * proximity / (d * d)
-          (vectorToObstacle.normalize * weight) * -1.0
-      }.foldLeft(Point3D.Zero)(_ + _)
+          if d <= radius then
+            val proximity = 1.0
+            val weight = obstacleRepulsionFactor * proximity / (d * d)
+            (vectorToObstacle.normalize * weight) * -1.0
+          else
+            val proximity = math.max(0.0, 1.0 - (d - radius) / (obstacleAvoidanceRange - radius))
+            val weight = obstacleRepulsionFactor * proximity / (d * d)
+            (vectorToObstacle.normalize * weight) * -1.0
+      }
+      .foldLeft(Point3D.Zero)(_ + _)
 
   private def computeRepulsionSum(neighborMap: Map[Int, Point3D], collisionArea: Double): Point3D =
     neighborMap.values
