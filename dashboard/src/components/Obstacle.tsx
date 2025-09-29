@@ -11,6 +11,8 @@ interface ObstacleProps {
 function Obstacle({ obstacle }: ObstacleProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const { position, size } = obstacle;
+  const radius = size / 2;
+  const radialSegments = 32;
 
   return (
     <mesh
@@ -19,7 +21,7 @@ function Obstacle({ obstacle }: ObstacleProps) {
           ref={meshRef}
           material={greenMaterial}
         >
-            <boxGeometry args={[size, size, size]} />
+            <cylinderGeometry  args={[radius, radius, size, radialSegments]} />
         </mesh>
   );
 }
